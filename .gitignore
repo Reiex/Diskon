@@ -1,0 +1,6 @@
+/.vs/
+/.vscode/
+/doc/html/
+/obj/
+/build/
+/lib/*.idb
