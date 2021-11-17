@@ -19,6 +19,12 @@
     <Filter Include="Source Files\Core">
       <UniqueIdentifier>{42fa94a3-fe8b-4445-9c0d-c33de1288e57}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Format">
+      <UniqueIdentifier>{aa2b47f3-0eeb-4f55-82d2-206dfa41c218}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Format">
+      <UniqueIdentifier>{091efcf2-96fb-4bbb-b441-f0df8e6de871}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\Diskon\Core\Lexer.hpp">
@@ -33,10 +39,22 @@
     <ClInclude Include="..\..\include\Diskon\Core\types.hpp">
       <Filter>Header Files\Core</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\Diskon\Format\Obj.hpp">
+      <Filter>Header Files\Format</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Diskon\Format\Format.hpp">
+      <Filter>Header Files\Format</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Diskon\Format\types.hpp">
+      <Filter>Header Files\Format</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\Diskon\Core\Lexer.cpp">
       <Filter>Source Files\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Diskon\Format\Obj.cpp">
+      <Filter>Source Files\Format</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

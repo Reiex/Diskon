@@ -23,13 +23,13 @@ namespace dsk
 		}
 	}
 
-	LexDefKeyword::LexDefKeyword(uint64_t id, const std::string& keyword) :
+	LexDefKeyword::LexDefKeyword(int64_t id, const std::string& keyword) :
 		_id(id),
 		_keywords({ keyword })
 	{
 	}
 
-	LexDefKeyword::LexDefKeyword(uint64_t id, const std::vector<std::string>& keywords) :
+	LexDefKeyword::LexDefKeyword(int64_t id, const std::vector<std::string>& keywords) :
 		_id(id),
 		_keywords(keywords)
 	{
@@ -54,6 +54,7 @@ namespace dsk
 
 		if (lexemeKeyword->keyword.empty())
 		{
+			delete lexemeKeyword;
 			lexeme = nullptr;
 			return 0;
 		}
@@ -67,6 +68,46 @@ namespace dsk
 	LexDefBase* LexDefKeyword::copy() const
 	{
 		return new LexDefKeyword(_id, _keywords);
+	}
+
+	LexDefNumber::LexDefNumber(int64_t id) :
+		_id(id)
+	{
+	}
+
+	uint64_t LexDefNumber::tryToLex(const std::deque<char>& content, LexemeBase*& lexeme) const
+	{
+		LexemeNumber* lexemeNumber = new LexemeNumber;
+		lexemeNumber->id = _id;
+		lexemeNumber->value = 0;
+
+		std::string buffer;
+		uint64_t i = 0;
+		while (i < content.size() && !std::isspace(content[i]))
+		{
+			buffer.push_back(content[i]);
+			++i;
+		}
+
+		char* endPtr = nullptr;
+		lexemeNumber->value = std::strtold(buffer.c_str(), &endPtr);
+
+		if (endPtr == buffer.c_str())
+		{
+			delete lexemeNumber;
+			lexeme = nullptr;
+			return 0;
+		}
+		else
+		{
+			lexeme = lexemeNumber;
+			return endPtr - buffer.c_str();
+		}
+	}
+
+	LexDefBase* LexDefNumber::copy() const
+	{
+		return new LexDefNumber(_id);
 	}
 
 	Lexer::Lexer(const std::vector<std::array<std::string, 2>>& commentDelimiters, const std::vector<char> spaces) :
@@ -85,6 +126,7 @@ namespace dsk
 
 	void Lexer::addContent(const std::string& content)
 	{
+		_content.resize(_content.size() + content.size());
 		for (const char& c : content)
 		{
 			_content.push_back(c);
@@ -222,6 +264,16 @@ namespace dsk
 		}
 
 		return _currentLexeme;
+	}
+
+	std::deque<char>& Lexer::getContent()
+	{
+		return _content;
+	}
+
+	const std::deque<char>& Lexer::getContent() const
+	{
+		return _content;
 	}
 
 	Lexer::~Lexer()
