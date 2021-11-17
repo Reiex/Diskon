@@ -128,7 +128,7 @@ namespace dsk
 					{
 						std::array<int64_t, 3> indices = { INT64_MAX, INT64_MAX, INT64_MAX };
 
-						indices[0] = (int64_t)((dsk::LexemeNumber*)lexeme)->value;
+						indices[0] = (int64_t)((dsk::LexemeNumber*)lexeme)->value - 1;
 
 						if (lexer.getContent().size() > 1 && lexer.getContent()[0] == '/' || lexer.getContent()[0] == '\\')
 						{
@@ -136,19 +136,19 @@ namespace dsk
 							{
 								lexeme = lexer.lex();
 								if (lexeme->id != 4) return false;
-								indices[2] = (int64_t)((dsk::LexemeNumber*)lexeme)->value;
+								indices[2] = (int64_t)((dsk::LexemeNumber*)lexeme)->value - 1;
 							}
 							else
 							{
 								lexeme = lexer.lex();
 								if (lexeme->id != 4) return false;
-								indices[1] = (int64_t)((dsk::LexemeNumber*)lexeme)->value;
+								indices[1] = (int64_t)((dsk::LexemeNumber*)lexeme)->value - 1;
 
 								if (lexer.getContent().size() > 1 && lexer.getContent()[0] == '/' || lexer.getContent()[0] == '\\')
 								{
 									lexeme = lexer.lex();
 									if (lexeme->id != 4) return false;
-									indices[2] = (int64_t)((dsk::LexemeNumber*)lexeme)->value;
+									indices[2] = (int64_t)((dsk::LexemeNumber*)lexeme)->value - 1;
 								}
 							}
 						}
