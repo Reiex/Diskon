@@ -152,6 +152,10 @@ namespace dsk
 								}
 							}
 						}
+						else
+						{
+							indices[1] = indices[2] = indices[0];
+						}
 
 						obj::Vertex vertex;
 
