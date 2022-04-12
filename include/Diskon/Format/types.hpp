@@ -2,11 +2,11 @@
 
 #include <Diskon/Core/Core.hpp>
 
-#include <filesystem>
-#include <fstream>
-
-
 namespace dsk
 {
-
+	namespace fmt
+	{
+		class RiffFile;
+		class WaveFile;
+	}
 }

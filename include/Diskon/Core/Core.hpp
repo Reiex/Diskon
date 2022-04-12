@@ -1,3 +1,5 @@
 #pragma once
 
-#include <Diskon/Core/Lexer.hpp>
+#include <Diskon/Core/types.hpp>
+
+#include <Diskon/Core/FormatHandler.hpp>

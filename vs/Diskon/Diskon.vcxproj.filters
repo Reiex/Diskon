@@ -27,20 +27,14 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\include\Diskon\Core\Lexer.hpp">
+    <ClInclude Include="..\..\include\Diskon\Core\Core.hpp">
       <Filter>Header Files\Core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\Diskon\Diskon.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\Diskon\Core\Core.hpp">
+    <ClInclude Include="..\..\include\Diskon\Core\FormatHandler.hpp">
       <Filter>Header Files\Core</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\Diskon\Core\types.hpp">
       <Filter>Header Files\Core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\Diskon\Format\Obj.hpp">
-      <Filter>Header Files\Format</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\Diskon\Format\Format.hpp">
       <Filter>Header Files\Format</Filter>
@@ -48,12 +42,24 @@
     <ClInclude Include="..\..\include\Diskon\Format\types.hpp">
       <Filter>Header Files\Format</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\Diskon\Format\Wave.hpp">
+      <Filter>Header Files\Format</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Diskon\Diskon.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Diskon\Format\Riff.hpp">
+      <Filter>Header Files\Format</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\src\Diskon\Core\Lexer.cpp">
+    <ClCompile Include="..\..\src\Diskon\Core\FormatHandler.cpp">
       <Filter>Source Files\Core</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\Diskon\Format\Obj.cpp">
+    <ClCompile Include="..\..\src\Diskon\Format\Wave.cpp">
+      <Filter>Source Files\Format</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\Diskon\Format\Riff.cpp">
       <Filter>Source Files\Format</Filter>
     </ClCompile>
   </ItemGroup>
