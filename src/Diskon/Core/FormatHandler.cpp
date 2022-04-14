@@ -13,9 +13,11 @@ namespace dsk
 		return (failedStep == FailedStep::None);
 	}
 
-	IOResult FormatHandler::readFromPath(const std::filesystem::path& path)
+	IOResult FormatHandler::readFromFile(const std::filesystem::path& path)
 	{
 		IOResult result;
+
+		clear();
 
 		if (!std::filesystem::exists(path))
 		{
@@ -36,7 +38,30 @@ namespace dsk
 		return result;
 	}
 
-	IOResult FormatHandler::writeToPath(const std::filesystem::path& path)
+	IOResult FormatHandler::readFromStream(std::istream& stream)
+	{
+		assert(stream);
+
+		clear();
+
+		IOResult result;
+		read(stream, result);
+		return result;
+	}
+
+	IOResult FormatHandler::readFromString(const std::string& string)
+	{
+		IOResult result;
+
+		clear();
+
+		std::istringstream stream(string, std::ios::in | std::ios::binary);
+		read(stream, result);
+
+		return result;
+	}
+
+	IOResult FormatHandler::writeToFile(const std::filesystem::path& path)
 	{
 		IOResult result;
 
@@ -49,6 +74,32 @@ namespace dsk
 		}
 
 		write(file, result);
+
+		return result;
+	}
+
+	IOResult FormatHandler::writeToStream(std::ostream& stream)
+	{
+		assert(stream);
+
+		IOResult result;
+		write(stream, result);
+		return result;
+	}
+
+	IOResult FormatHandler::writeToString(std::string& string)
+	{
+		IOResult result;
+
+		std::ostringstream stream;
+		write(stream, result);
+
+		if (!result)
+		{
+			return result;
+		}
+
+		string = stream.str();
 
 		return result;
 	}

@@ -14,14 +14,14 @@ namespace dsk
 		{
 			char riffId[4];
 			stream.read(riffId, 4);
-			if (std::strcmp(riffId, "RIFF"))
+			if (std::memcmp(riffId, "RIFF", 4))
 			{
 				result.failedStep = IOResult::FailedStep::ParseFailed;
 				result.errorMessage = "'RIFF' identifier not found";
 				return;
 			}
 
-			unsigned long size;
+			uint32_t size;
 			stream.read((char*) &size, 4);
 			if (!stream)
 			{
@@ -44,7 +44,7 @@ namespace dsk
 				return;
 			}
 
-			unsigned long remainingSize = size - 4;
+			uint32_t remainingSize = size - 4;
 			while (remainingSize)
 			{
 				chunks.emplace_back();
@@ -67,7 +67,7 @@ namespace dsk
 				return;
 			}
 
-			unsigned long size = 4;
+			uint32_t size = 4;
 			for (const riff::Chunk& chunk : chunks)
 			{
 				size += 8 + chunk.data.size();
@@ -100,7 +100,7 @@ namespace dsk
 			}
 		}
 
-		void RiffFile::readChunk(std::istream& stream, IOResult& result, riff::Chunk& chunk, unsigned long& remainingSize)
+		void RiffFile::readChunk(std::istream& stream, IOResult& result, riff::Chunk& chunk, uint32_t& remainingSize)
 		{
 			if (remainingSize < 8)
 			{
@@ -117,7 +117,7 @@ namespace dsk
 				return;
 			}
 
-			unsigned long size;
+			uint32_t size;
 			stream.read((char*)& size, 4);
 			if (!stream)
 			{
@@ -125,6 +125,7 @@ namespace dsk
 				result.errorMessage = "Error while reading RIFF chunk size";
 				return;
 			}
+			remainingSize -= 8;
 
 			if (size > remainingSize)
 			{
@@ -132,6 +133,7 @@ namespace dsk
 				result.errorMessage = "RIFF chunk size bigger than remaining size";
 				return;
 			}
+			remainingSize -= size;
 
 			chunk.data.resize(size);
 
@@ -141,6 +143,18 @@ namespace dsk
 				result.failedStep = IOResult::FailedStep::ParseFailed;
 				result.errorMessage = "Error while read RIFF chunk data";
 				return;
+			}
+
+			if (size % 2)
+			{
+				char padByte;
+				stream.read(&padByte, 1);
+				if (!stream)
+				{
+					result.failedStep = IOResult::FailedStep::ParseFailed;
+					result.errorMessage = "Error while read RIFF chunk pad byte";
+					return;
+				}
 			}
 		}
 
@@ -154,7 +168,7 @@ namespace dsk
 				return;
 			}
 
-			unsigned long chunkSize = chunk.data.size();
+			uint32_t chunkSize = chunk.data.size();
 			stream.write((char*) &chunkSize, 4);
 			if (!stream)
 			{
@@ -169,6 +183,17 @@ namespace dsk
 				result.failedStep = IOResult::FailedStep::ParseFailed;
 				result.errorMessage = "Error while writing RIFF chunk data";
 				return;
+			}
+
+			if (chunkSize % 2)
+			{
+				stream.write("\0", 1);
+				if (!stream)
+				{
+					result.failedStep = IOResult::FailedStep::ParseFailed;
+					result.errorMessage = "Error while writing RIFF chunk pad byte";
+					return;
+				}
 			}
 		}
 	}

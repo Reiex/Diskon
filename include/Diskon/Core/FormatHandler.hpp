@@ -15,7 +15,7 @@ namespace dsk
 
 		explicit operator bool() const;
 
-		enum FailedStep
+		enum class FailedStep
 		{
 			None,
 			FileNotFound,
@@ -39,8 +39,13 @@ namespace dsk
 			FormatHandler& operator=(const FormatHandler& handler) = delete;
 			FormatHandler& operator=(FormatHandler&& handler) = delete;
 
-			IOResult readFromPath(const std::filesystem::path& path);
-			IOResult writeToPath(const std::filesystem::path& path);
+			IOResult readFromFile(const std::filesystem::path& path);
+			IOResult readFromStream(std::istream& stream);
+			IOResult readFromString(const std::string& string);
+
+			IOResult writeToFile(const std::filesystem::path& path);
+			IOResult writeToStream(std::ostream& stream);
+			IOResult writeToString(std::string& string);
 
 			virtual void clear() = 0;
 

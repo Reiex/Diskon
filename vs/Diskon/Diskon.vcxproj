@@ -25,6 +25,7 @@
     <ClInclude Include="..\..\include\Diskon\Diskon.hpp" />
     <ClInclude Include="..\..\include\Diskon\Format\Format.hpp" />
     <ClInclude Include="..\..\include\Diskon\Format\Riff.hpp" />
+    <ClInclude Include="..\..\include\Diskon\Format\templates\Wave.hpp" />
     <ClInclude Include="..\..\include\Diskon\Format\types.hpp" />
     <ClInclude Include="..\..\include\Diskon\Format\Wave.hpp" />
   </ItemGroup>

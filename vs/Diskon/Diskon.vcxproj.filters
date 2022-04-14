@@ -25,6 +25,9 @@
     <Filter Include="Source Files\Format">
       <UniqueIdentifier>{091efcf2-96fb-4bbb-b441-f0df8e6de871}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Format\templates">
+      <UniqueIdentifier>{8c3b4d82-e616-4f85-a6e9-815903196ec1}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\Diskon\Core\Core.hpp">
@@ -50,6 +53,9 @@
     </ClInclude>
     <ClInclude Include="..\..\include\Diskon\Format\Riff.hpp">
       <Filter>Header Files\Format</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Diskon\Format\templates\Wave.hpp">
+      <Filter>Header Files\Format\templates</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

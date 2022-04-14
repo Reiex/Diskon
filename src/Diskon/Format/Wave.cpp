@@ -4,92 +4,189 @@ namespace dsk
 {
 	namespace fmt
 	{
+		const wave::FormatChunk& WaveFile::getFormatChunk() const
+		{
+			return _formatChunk;
+		}
+
+		uint32_t WaveFile::getSampleCount() const
+		{
+			return _sampleCount;
+		}
+
+		void WaveFile::getSamples(uint16_t channel, std::vector<int8_t>& samples) const
+		{
+			samples.resize(_sampleCount);
+			getRawSamples<int8_t>(channel, samples.data());
+		}
+
+		void WaveFile::getSamples(uint16_t channel, std::vector<int16_t>& samples) const
+		{
+			samples.resize(_sampleCount);
+			getRawSamples<int16_t>(channel, samples.data());
+		}
+
+		void WaveFile::getSamples(uint16_t channel, std::vector<int32_t>& samples) const
+		{
+			samples.resize(_sampleCount);
+			getRawSamples<int32_t>(channel, samples.data());
+		}
+
+		void WaveFile::getSamples(uint16_t channel, std::vector<int64_t>& samples) const
+		{
+			samples.resize(_sampleCount);
+			getRawSamples<int64_t>(channel, samples.data());
+		}
+
+		void WaveFile::getSamples(uint16_t channel, std::vector<float>& samples) const
+		{
+			samples.resize(_sampleCount);
+			getRawSamples<float>(channel, samples.data());
+		}
+
+		void WaveFile::getSamples(uint16_t channel, std::vector<double>& samples) const
+		{
+			samples.resize(_sampleCount);
+			getRawSamples<double>(channel, samples.data());
+		}
+
+		void WaveFile::setFormatChunk(const wave::FormatChunk& formatChunk, uint32_t sampleCount)
+		{
+			clear();
+
+			_formatChunk = formatChunk;
+			_sampleCount = sampleCount;
+			_rawSamples.resize(_sampleCount * _formatChunk.blockAlign);
+		}
+
+		void WaveFile::setSamples(uint16_t channel, const int8_t* samples)
+		{
+			setRawSamples<int8_t>(channel, samples);
+		}
+
+		void WaveFile::setSamples(uint16_t channel, const int16_t* samples)
+		{
+			setRawSamples<int16_t>(channel, samples);
+		}
+
+		void WaveFile::setSamples(uint16_t channel, const int32_t* samples)
+		{
+			setRawSamples<int32_t>(channel, samples);
+		}
+
+		void WaveFile::setSamples(uint16_t channel, const int64_t* samples)
+		{
+			setRawSamples<int64_t>(channel, samples);
+		}
+
+		void WaveFile::setSamples(uint16_t channel, const float* samples)
+		{
+			setRawSamples<float>(channel, samples);
+		}
+
+		void WaveFile::setSamples(uint16_t channel, const double* samples)
+		{
+			setRawSamples<double>(channel, samples);
+		}
+
 		void WaveFile::clear()
 		{
-			channelCount = 0;
-			sampleRate = 0;
-			bitsPerSample = 0;
-			samples.clear();
+			std::memset(&_formatChunk, 0, sizeof(wave::FormatChunk));
+			_rawSamples.clear();
 		}
 
 		void WaveFile::read(std::istream& stream, IOResult& result)
 		{
+			// Load RIFF File
+
+			RiffFile file;
+			result = file.readFromStream(stream);
+			if (!result)
+			{
+				return;
+			}
+
+			// Check if it is a WAVE file
+
+			if (!std::equal(file.formType.begin(), file.formType.end(), "WAVE"))
+			{
+				result.failedStep = IOResult::FailedStep::ParseFailed;
+				result.errorMessage = "Bad form-type for WAVE RIFF file: " + std::string(file.formType.begin(), file.formType.end());
+				return;
+			}
+
+			// Check if format and data chunk are present
+
+			riff::Chunk* rawFormatChunk = nullptr;
+			riff::Chunk* dataChunk = nullptr;
+			for (riff::Chunk& chunk : file.chunks)
+			{
+				if (std::equal(chunk.id.begin(), chunk.id.end(), "fmt ") && !rawFormatChunk)
+				{
+					rawFormatChunk = &chunk;
+				}
+				else if (std::equal(chunk.id.begin(), chunk.id.end(), "data") && !dataChunk)
+				{
+					dataChunk = &chunk;
+				}
+			}
+
+			if (!rawFormatChunk)
+			{
+				result.failedStep = IOResult::FailedStep::ParseFailed;
+				result.errorMessage = "Could not find format chunk for WAVE file";
+				return;
+			}
+			if (!dataChunk)
+			{
+				result.failedStep = IOResult::FailedStep::ParseFailed;
+				result.errorMessage = "Could not find data chunk for WAVE file";
+				return;
+			}
+
+			// Load format chunk
+
+			if (rawFormatChunk->data.size() < 14)
+			{
+				result.failedStep = IOResult::FailedStep::ParseFailed;
+				result.errorMessage = "Format chunk of insufficient size for WAVE file";
+				return;
+			}
+
+			_formatChunk = *reinterpret_cast<wave::FormatChunk*>(rawFormatChunk->data.data());
+
+			if (rawFormatChunk->data.size() < 18)
+			{
+				_formatChunk.extSize = 0;
+			}
+
+			if (rawFormatChunk->data.size() < 16)
+			{
+				_formatChunk.bitsPerSample = 8 * (_formatChunk.blockAlign / _formatChunk.channels);
+			}
+
+			// Load data chunk
+
+			_sampleCount = dataChunk->data.size() / _formatChunk.blockAlign;
+			_rawSamples = dataChunk->data;
 		}
 
 		void WaveFile::write(std::ostream& stream, IOResult& result)
 		{
-			assert(channelCount > 0);
-			assert(channelCount == samples.size());
-			assert(bitsPerSample == 8
-				|| bitsPerSample == 16
-				|| bitsPerSample == 32); // Better handling of bitsPerSample (not only the assert but all)
+			RiffFile file;
 
-			const uint32_t blockCount = samples[0].size();
-			const uint32_t sampleCount = blockCount * channelCount;
-			const uint16_t bytesPerSample = bitsPerSample / 8;
-			const uint16_t blockSize = channelCount * bytesPerSample;
-			const uint32_t byteRate = blockSize * sampleRate;
-			const uint32_t dataSize = blockSize * blockCount;
+			file.formType = { 'W', 'A', 'V', 'E' };
 
-			for (uint16_t i = 1; i < channelCount; ++i)
-			{
-				assert(samples[i].size() == blockCount);
-			}
+			file.chunks.resize(2);
 
-			float* arrangedData = new float[sampleCount];
-			float* itArrangedData = arrangedData;
-			for (uint32_t i = 0; i < sampleCount; ++i)
-			{
-				for (uint16_t j = 0; j < channelCount; ++j)
-				{
-					*itArrangedData = samples[j][i];
-					++itArrangedData;
-				}
-			}
+			file.chunks[0].id = { 'f', 'm', 't', ' ' };
+			file.chunks[0].data.resize(sizeof(wave::FormatChunk));
+			std::memcpy(file.chunks[0].data.data(), &_formatChunk, sizeof(wave::FormatChunk));
 
-			char* data = new char[dataSize];
-			char* itData = data;
-			itArrangedData = arrangedData;
-			for (uint32_t i = 0; i < sampleCount; ++i)
-			{
-				if (bitsPerSample <= 8)
-				{
-					*((int8_t*) itData) = *itArrangedData * INT8_MAX;
-				}
-				else if (bitsPerSample <= 16)
-				{
-					*((int16_t*) itData) = *itArrangedData * INT16_MAX;
-				}
-				else if (bitsPerSample <= 32)
-				{
-					*((int32_t*) itData) = *itArrangedData * INT32_MAX;
-				}
+			file.chunks[1].id = { 'd', 'a', 't', 'a' };
+			file.chunks[1].data = _rawSamples;
 
-				itData += bytesPerSample;
-				++itArrangedData;
-			}
-			delete[] arrangedData;
-
-			const uint32_t totalSize = 12 + 24 + 8 + dataSize - 8;
-			const uint32_t formatSectionSize = 16;
-			const uint16_t formatCode = 1;
-
-			stream.write("RIFF", 4);
-			stream.write((char*) &totalSize, 4);
-			stream.write("WAVE", 4);
-			stream.write("fmt ", 4);
-			stream.write((char*) &formatSectionSize, 4);
-			stream.write((char*) &formatCode, 2);
-			stream.write((char*) &channelCount, 2);
-			stream.write((char*) &sampleRate, 4);
-			stream.write((char*) &byteRate, 4);
-			stream.write((char*) &blockSize, 2);
-			stream.write((char*) &bitsPerSample, 2);
-			stream.write("data", 4);
-			stream.write((char*) &dataSize, 4);
-			stream.write(data, dataSize);
-
-			delete[] data;
+			result = file.writeToStream(stream);
 		}
 	}
 }
