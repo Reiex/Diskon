@@ -4,6 +4,65 @@ namespace dsk
 {
 	namespace fmt
 	{
+		namespace wave
+		{
+			FormatChunk::FormatChunk()
+			{
+				clear();
+			}
+
+			bool FormatChunk::isValid() const
+			{
+				bool success = true;
+
+				switch (formatTag)
+				{
+					case WaveFormat::PCM:
+					{
+						success = success && (channels > 0 && channels <= 6);
+						success = success && (samplesPerSec != 0);
+						success = success && (avgBytesPerSec == blockAlign * samplesPerSec);
+						success = success && (blockAlign == channels * bitsPerSample / 8);
+						success = success && (bitsPerSample == 8 || bitsPerSample == 16 || bitsPerSample == 32 || bitsPerSample == 64);
+						success = success && (extSize == 0);
+
+						break;
+					}
+					case WaveFormat::Float:
+					{
+						success = success && (channels > 0 && channels <= 6);
+						success = success && (samplesPerSec != 0);
+						success = success && (avgBytesPerSec == blockAlign * samplesPerSec);
+						success = success && (blockAlign == channels * bitsPerSample / 8);
+						success = success && (bitsPerSample == 32 || bitsPerSample == 64);
+						success = success && (extSize == 0);
+
+						break;
+					}
+					default:
+					{
+						success = false;
+
+						break;
+					}
+				}
+
+				return success;
+			}
+
+			void FormatChunk::clear()
+			{
+				std::memset(this, 0, sizeof(wave::FormatChunk));
+			}
+		}
+
+		WaveFile::WaveFile() :
+			_formatChunk(),
+			_sampleCount(0),
+			_rawSamples()
+		{
+		}
+
 		const wave::FormatChunk& WaveFile::getFormatChunk() const
 		{
 			return _formatChunk;
@@ -52,6 +111,8 @@ namespace dsk
 
 		void WaveFile::setFormatChunk(const wave::FormatChunk& formatChunk, uint32_t sampleCount)
 		{
+			assert(formatChunk.isValid());
+
 			clear();
 
 			_formatChunk = formatChunk;
@@ -91,7 +152,7 @@ namespace dsk
 
 		void WaveFile::clear()
 		{
-			std::memset(&_formatChunk, 0, sizeof(wave::FormatChunk));
+			_formatChunk.clear();
 			_rawSamples.clear();
 		}
 
@@ -163,6 +224,13 @@ namespace dsk
 			if (rawFormatChunk->data.size() < 16)
 			{
 				_formatChunk.bitsPerSample = 8 * (_formatChunk.blockAlign / _formatChunk.channels);
+			}
+
+			if (!_formatChunk.isValid())
+			{
+				result.failedStep = IOResult::FailedStep::ParseFailed;
+				result.errorMessage = "Invalid format chunk for WAVE file.";
+				return;
 			}
 
 			// Load data chunk

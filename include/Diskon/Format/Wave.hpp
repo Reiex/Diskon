@@ -20,19 +20,38 @@ namespace dsk
 
 			struct FormatChunk
 			{
-				WaveFormat formatTag;
-				uint16_t channels;
-				uint32_t samplesPerSec;
-				uint32_t avgBytesPerSec;
-				uint16_t blockAlign;
-				uint16_t bitsPerSample;
-				uint16_t extSize;
+				FormatChunk();
+				FormatChunk(const FormatChunk& formatChunk) = default;
+				FormatChunk(FormatChunk&& formatChunk) = default;
+
+				FormatChunk& operator=(const FormatChunk& formatChunk) = default;
+				FormatChunk& operator=(FormatChunk&& formatChunk) = default;
+
+				WaveFormat formatTag;		///< Format type (usually PCM or Float).
+				uint16_t channels;			///< Number of channels (1: mono, 2: stereo, 3: 2.1, etc...).
+				uint32_t samplesPerSec;		///< Number of samples per second on one channel (usually 44100).
+				uint32_t avgBytesPerSec;	///< Usually `blockAlign*samplesPerSec`.
+				uint16_t blockAlign;		///< Offset between two blocks of samples (usually `bitsPerSample*samplesPerSec/8`).
+				uint16_t bitsPerSample;		///< Number of bits in each sample (usually 16 or 32).
+				uint16_t extSize;			///< Size of the extension chunk (usually 0).
+
+				bool isValid() const;
+				void clear();
+
+				~FormatChunk() = default;
 			};
 		}
 
 		class WaveFile : public FormatHandler
 		{
 			public:
+
+				WaveFile();
+				WaveFile(const WaveFile& file) = default;
+				WaveFile(WaveFile&& file) = default;
+
+				WaveFile& operator=(const WaveFile& file) = default;
+				WaveFile& operator=(WaveFile&& file) = default;
 
 				const wave::FormatChunk& getFormatChunk() const;
 				uint32_t getSampleCount() const;
@@ -52,6 +71,8 @@ namespace dsk
 				void setSamples(uint16_t channel, const double* samples);
 
 				void clear() override;
+
+				~WaveFile() = default;
 
 			private:
 

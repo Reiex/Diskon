@@ -2,7 +2,7 @@
 
 int main()
 {
-	dsk::fmt::WaveFile file;
+	/*dsk::fmt::WaveFile file;
 	dsk::fmt::wave::FormatChunk formatChunk;
 	formatChunk.formatTag = dsk::fmt::wave::WaveFormat::PCM;
 	formatChunk.channels = 1;
@@ -21,14 +21,14 @@ int main()
 
 	file.setFormatChunk(formatChunk, _countof(samples));
 	file.setSamples(0, samples);
-	file.writeToFile("build/test_sine.wav");
+	file.writeToFile("build/test_sine.wav");*/
 
 	/*dsk::fmt::WaveFile inputFile;
 	inputFile.readFromFile("build/input_test.wav");
 
 	dsk::fmt::wave::FormatChunk formatChunk = inputFile.getFormatChunk();
-	formatChunk.formatTag = dsk::fmt::wave::WaveFormat::Float;
-	formatChunk.bitsPerSample = 32;
+	formatChunk.formatTag = dsk::fmt::wave::WaveFormat::PCM;
+	formatChunk.bitsPerSample = 8;
 	formatChunk.blockAlign = formatChunk.channels * (formatChunk.bitsPerSample / 8);
 	formatChunk.avgBytesPerSec = formatChunk.blockAlign * formatChunk.samplesPerSec;
 
