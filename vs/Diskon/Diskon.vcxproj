@@ -20,7 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\Diskon\Core\Core.hpp" />
-    <ClInclude Include="..\..\include\Diskon\Core\FormatHandler.hpp" />
+    <ClInclude Include="..\..\include\Diskon\Core\FormatStream.hpp" />
     <ClInclude Include="..\..\include\Diskon\Core\types.hpp" />
     <ClInclude Include="..\..\include\Diskon\Diskon.hpp" />
     <ClInclude Include="..\..\include\Diskon\Format\Format.hpp" />
@@ -28,11 +28,13 @@
     <ClInclude Include="..\..\include\Diskon\Format\templates\Wave.hpp" />
     <ClInclude Include="..\..\include\Diskon\Format\types.hpp" />
     <ClInclude Include="..\..\include\Diskon\Format\Wave.hpp" />
+    <ClInclude Include="..\..\include\Diskon\Format\Xml.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\include\Diskon\Format\Riff.cpp" />
-    <ClCompile Include="..\..\src\Diskon\Core\FormatHandler.cpp" />
+    <ClCompile Include="..\..\src\Diskon\Format\Riff.cpp" />
+    <ClCompile Include="..\..\src\Diskon\Core\FormatStream.cpp" />
     <ClCompile Include="..\..\src\Diskon\Format\Wave.cpp" />
+    <ClCompile Include="..\..\src\Diskon\Format\Xml.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
@@ -120,7 +122,7 @@
       <PrecompiledHeaderFile>
       </PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>$(SolutionDir)include\</AdditionalIncludeDirectories>
-      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -140,7 +142,7 @@
       <PrecompiledHeaderFile>
       </PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>$(SolutionDir)include\</AdditionalIncludeDirectories>
-      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -160,7 +162,7 @@
       <PrecompiledHeaderFile>
       </PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>$(SolutionDir)include\</AdditionalIncludeDirectories>
-      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -180,7 +182,7 @@
       <PrecompiledHeaderFile>
       </PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>$(SolutionDir)include\</AdditionalIncludeDirectories>
-      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>

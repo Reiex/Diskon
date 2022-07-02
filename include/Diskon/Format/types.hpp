@@ -6,7 +6,27 @@ namespace dsk
 {
 	namespace fmt
 	{
-		class RiffFile;
-		class WaveFile;
+		namespace riff
+		{
+			struct ChunkHeader;
+			struct Chunk;
+			struct FileHeader;
+			struct File;
+		}
+		class RifStream;
+		
+		namespace wave
+		{
+			enum class Format : uint16_t;
+			struct Header;
+			struct File;
+		}
+		class WaveStream;
+		
+		namespace xml
+		{
+
+		}
+		class XmlStream;
 	}
 }

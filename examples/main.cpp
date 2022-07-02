@@ -2,48 +2,38 @@
 
 int main()
 {
-	/*dsk::fmt::WaveFile file;
-	dsk::fmt::wave::FormatChunk formatChunk;
-	formatChunk.formatTag = dsk::fmt::wave::WaveFormat::PCM;
-	formatChunk.channels = 1;
-	formatChunk.samplesPerSec = 44100;
-	formatChunk.avgBytesPerSec = 4 * 44100;
-	formatChunk.blockAlign = 4;
-	formatChunk.bitsPerSample = 32;
-	formatChunk.extSize = 0;
+	dsk::fmt::WaveStream stream;
+	stream.setSource("build/input_test.wav");
+	stream.setDestination("build/output_test.wav");
 
-	float samples[44100 * 5];
-	for (uint64_t i = 0; i < _countof(samples); ++i)
+	dsk::fmt::wave::File file;
+	stream.readFile(file);
+
+	dsk::fmt::wave::File copy;
+	copy.header.formatTag = dsk::fmt::wave::Format::PCM;
+	copy.header.channels = file.header.channels;
+	copy.header.samplesPerSec = 22050;
+	copy.header.bitsPerSample = 8;
+	copy.header.blockAlign = ((copy.header.bitsPerSample + 7) / 8) * copy.header.channels;
+	copy.header.avgBytesPerSec = copy.header.blockAlign * copy.header.samplesPerSec;
+	const uint32_t factor = file.header.samplesPerSec / copy.header.samplesPerSec;
+	copy.header.blockCount = file.header.blockCount / factor;
+	copy.rawSamples.resize(copy.header.blockAlign * copy.header.blockCount);
+	
+	int64_t* buffer = new int64_t[file.header.blockCount];
+	for (uint16_t i = 0; i < copy.header.channels; ++i)
 	{
-		float t = float(i) / formatChunk.samplesPerSec;
-		samples[i] = std::sin(2 * 3.1415926 * 100 * t);
+		file.getSamples(i, buffer);
+
+		for (uint32_t j = 0; j < copy.header.blockCount; ++j)
+		{
+			buffer[j] = buffer[factor * j];
+		}
+
+		copy.setSamples(i, buffer);
 	}
 
-	file.setFormatChunk(formatChunk, _countof(samples));
-	file.setSamples(0, samples);
-	file.writeToFile("build/test_sine.wav");*/
-
-	/*dsk::fmt::WaveFile inputFile;
-	inputFile.readFromFile("build/input_test.wav");
-
-	dsk::fmt::wave::FormatChunk formatChunk = inputFile.getFormatChunk();
-	formatChunk.formatTag = dsk::fmt::wave::WaveFormat::PCM;
-	formatChunk.bitsPerSample = 8;
-	formatChunk.blockAlign = formatChunk.channels * (formatChunk.bitsPerSample / 8);
-	formatChunk.avgBytesPerSec = formatChunk.blockAlign * formatChunk.samplesPerSec;
-
-	dsk::fmt::WaveFile outputFile;
-	outputFile.setFormatChunk(formatChunk, inputFile.getSampleCount());
-
-	for (uint16_t i = 0; i < formatChunk.channels; ++i)
-	{
-		std::vector<double> samples;
-		inputFile.getSamples(i, samples);
-		outputFile.setSamples(i, samples.data());
-	}
-
-	outputFile.writeToFile("build/output_test.wav");*/
-
+	stream.writeFile(copy);
 
 	return 0;
 }

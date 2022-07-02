@@ -8,38 +8,55 @@ namespace dsk
 	{
 		namespace riff
 		{
+			struct ChunkHeader
+			{
+				char id[4];
+				uint32_t size;	// Number of bytes in chunk data. Total chunk size - 8.
+			};
+
 			struct Chunk
 			{
-				std::array<char, 4> id;
-				std::vector<char> data;
+				char id[4];
+				std::vector<uint8_t> data;
+			};
+
+			struct FileHeader
+			{
+				uint32_t size;	// Number of bytes in each Chunk (including id) + size of formType (4 bytes). File total size - 8.
+				char formType[4];
+			};
+
+			struct File
+			{
+				char formType[4];
+				std::vector<Chunk> chunks;
 			};
 		}
 
-		class RiffFile : public FormatHandler
+		class RiffStream : public FormatStream
 		{
 			public:
 
-				RiffFile() = default;
-				RiffFile(const RiffFile& file) = default;
-				RiffFile(RiffFile&& file) = default;
+				RiffStream() = default;
+				RiffStream(const RiffStream& stream) = default;
+				RiffStream(RiffStream&& stream) = default;
 
-				RiffFile& operator=(const RiffFile& file) = default;
-				RiffFile& operator=(RiffFile&& file) = default;
+				RiffStream& operator=(const RiffStream& stream) = default;
+				RiffStream& operator=(RiffStream&& stream) = default;
 
-				std::array<char, 4> formType;
-				std::vector<riff::Chunk> chunks;
+				const FormatError& readFile(riff::File& file);
+				const FormatError& readFileHeader(riff::FileHeader& fileHeader);
+				const FormatError& readChunk(riff::Chunk& chunk);
+				const FormatError& readChunkHeader(riff::ChunkHeader& chunkHeader);
+				const FormatError& readChunkData(uint8_t* data, uint32_t size);
 
-				void clear() override;
+				const FormatError& writeFile(const riff::File& file);
+				const FormatError& writeFileHeader(const riff::FileHeader& fileHeader);
+				const FormatError& writeChunk(const riff::Chunk& chunk);
+				const FormatError& writeChunkHeader(const riff::ChunkHeader& chunkHeader);
+				const FormatError& writeChunkData(const uint8_t* data, uint32_t size);
 
-				~RiffFile() = default;
-
-			private:
-
-				void read(std::istream& stream, IOResult& result) override;
-				void write(std::ostream& stream, IOResult& result) override;
-
-				void readChunk(std::istream& stream, IOResult& result, riff::Chunk& chunk, uint32_t& remainingSize);
-				void writeChunk(std::ostream& stream, IOResult& result, const riff::Chunk& chunk);
+				~RiffStream() = default;
 		};
 	}
 }

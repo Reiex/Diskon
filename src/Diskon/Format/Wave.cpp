@@ -6,255 +6,340 @@ namespace dsk
 	{
 		namespace wave
 		{
-			FormatChunk::FormatChunk()
+			namespace _wave
 			{
-				clear();
+				struct RawFormatChunk
+				{
+					Format formatTag;
+					uint16_t channels;
+					uint32_t samplesPerSec;
+					uint32_t avgBytesPerSec;
+					uint16_t blockAlign;
+					uint16_t bitsPerSample;
+					uint16_t extSize;
+				};
 			}
 
-			bool FormatChunk::isValid() const
+
+			bool Header::isValid() const
 			{
-				bool success = true;
+				bool bValid = true;
 
 				switch (formatTag)
 				{
-					case WaveFormat::PCM:
+					case Format::PCM:
 					{
-						success = success && (channels > 0 && channels <= 6);
-						success = success && (samplesPerSec != 0);
-						success = success && (avgBytesPerSec == blockAlign * samplesPerSec);
-						success = success && (blockAlign == channels * bitsPerSample / 8);
-						success = success && (bitsPerSample == 8 || bitsPerSample == 16 || bitsPerSample == 32 || bitsPerSample == 64);
-						success = success && (extSize == 0);
+						bValid = bValid && (channels > 0);
+						bValid = bValid && (samplesPerSec > 0);
+						bValid = bValid && (bitsPerSample > 0);
+
+						const uint16_t bytesPerSample = (bitsPerSample + 7) / 8;
+
+						bValid = bValid && (blockAlign == channels * bytesPerSample);
+						bValid = bValid && (avgBytesPerSec == blockAlign * samplesPerSec);
+
+						bValid = bValid && (extension.size() == 0);
 
 						break;
 					}
-					case WaveFormat::Float:
+					case Format::Float:
 					{
-						success = success && (channels > 0 && channels <= 6);
-						success = success && (samplesPerSec != 0);
-						success = success && (avgBytesPerSec == blockAlign * samplesPerSec);
-						success = success && (blockAlign == channels * bitsPerSample / 8);
-						success = success && (bitsPerSample == 32 || bitsPerSample == 64);
-						success = success && (extSize == 0);
-
-						break;
-					}
-					default:
-					{
-						success = false;
-
 						break;
 					}
 				}
 
-				return success;
+				return bValid;
 			}
 
-			void FormatChunk::clear()
+
+			void File::getSamples(uint16_t channel, int8_t* samples) const
 			{
-				std::memset(this, 0, sizeof(wave::FormatChunk));
+				_getSamples(channel, samples);
 			}
-		}
 
-		WaveFile::WaveFile() :
-			_formatChunk(),
-			_sampleCount(0),
-			_rawSamples()
-		{
-		}
-
-		const wave::FormatChunk& WaveFile::getFormatChunk() const
-		{
-			return _formatChunk;
-		}
-
-		uint32_t WaveFile::getSampleCount() const
-		{
-			return _sampleCount;
-		}
-
-		void WaveFile::getSamples(uint16_t channel, std::vector<int8_t>& samples) const
-		{
-			samples.resize(_sampleCount);
-			getRawSamples<int8_t>(channel, samples.data());
-		}
-
-		void WaveFile::getSamples(uint16_t channel, std::vector<int16_t>& samples) const
-		{
-			samples.resize(_sampleCount);
-			getRawSamples<int16_t>(channel, samples.data());
-		}
-
-		void WaveFile::getSamples(uint16_t channel, std::vector<int32_t>& samples) const
-		{
-			samples.resize(_sampleCount);
-			getRawSamples<int32_t>(channel, samples.data());
-		}
-
-		void WaveFile::getSamples(uint16_t channel, std::vector<int64_t>& samples) const
-		{
-			samples.resize(_sampleCount);
-			getRawSamples<int64_t>(channel, samples.data());
-		}
-
-		void WaveFile::getSamples(uint16_t channel, std::vector<float>& samples) const
-		{
-			samples.resize(_sampleCount);
-			getRawSamples<float>(channel, samples.data());
-		}
-
-		void WaveFile::getSamples(uint16_t channel, std::vector<double>& samples) const
-		{
-			samples.resize(_sampleCount);
-			getRawSamples<double>(channel, samples.data());
-		}
-
-		void WaveFile::setFormatChunk(const wave::FormatChunk& formatChunk, uint32_t sampleCount)
-		{
-			assert(formatChunk.isValid());
-
-			clear();
-
-			_formatChunk = formatChunk;
-			_sampleCount = sampleCount;
-			_rawSamples.resize(_sampleCount * _formatChunk.blockAlign);
-		}
-
-		void WaveFile::setSamples(uint16_t channel, const int8_t* samples)
-		{
-			setRawSamples<int8_t>(channel, samples);
-		}
-
-		void WaveFile::setSamples(uint16_t channel, const int16_t* samples)
-		{
-			setRawSamples<int16_t>(channel, samples);
-		}
-
-		void WaveFile::setSamples(uint16_t channel, const int32_t* samples)
-		{
-			setRawSamples<int32_t>(channel, samples);
-		}
-
-		void WaveFile::setSamples(uint16_t channel, const int64_t* samples)
-		{
-			setRawSamples<int64_t>(channel, samples);
-		}
-
-		void WaveFile::setSamples(uint16_t channel, const float* samples)
-		{
-			setRawSamples<float>(channel, samples);
-		}
-
-		void WaveFile::setSamples(uint16_t channel, const double* samples)
-		{
-			setRawSamples<double>(channel, samples);
-		}
-
-		void WaveFile::clear()
-		{
-			_formatChunk.clear();
-			_rawSamples.clear();
-		}
-
-		void WaveFile::read(std::istream& stream, IOResult& result)
-		{
-			// Load RIFF File
-
-			RiffFile file;
-			result = file.readFromStream(stream);
-			if (!result)
+			void File::getSamples(uint16_t channel, int16_t* samples) const
 			{
-				return;
+				_getSamples(channel, samples);
 			}
 
-			// Check if it is a WAVE file
-
-			if (!std::equal(file.formType.begin(), file.formType.end(), "WAVE"))
+			void File::getSamples(uint16_t channel, int32_t* samples) const
 			{
-				result.failedStep = IOResult::FailedStep::ParseFailed;
-				result.errorMessage = "Bad form-type for WAVE RIFF file: " + std::string(file.formType.begin(), file.formType.end());
-				return;
+				_getSamples(channel, samples);
 			}
 
-			// Check if format and data chunk are present
-
-			riff::Chunk* rawFormatChunk = nullptr;
-			riff::Chunk* dataChunk = nullptr;
-			for (riff::Chunk& chunk : file.chunks)
+			void File::getSamples(uint16_t channel, int64_t* samples) const
 			{
-				if (std::equal(chunk.id.begin(), chunk.id.end(), "fmt ") && !rawFormatChunk)
-				{
-					rawFormatChunk = &chunk;
-				}
-				else if (std::equal(chunk.id.begin(), chunk.id.end(), "data") && !dataChunk)
-				{
-					dataChunk = &chunk;
-				}
+				_getSamples(channel, samples);
 			}
 
-			if (!rawFormatChunk)
+			void File::getSamples(uint16_t channel, float* samples) const
 			{
-				result.failedStep = IOResult::FailedStep::ParseFailed;
-				result.errorMessage = "Could not find format chunk for WAVE file";
-				return;
+				_getSamples(channel, samples);
 			}
-			if (!dataChunk)
+
+			void File::getSamples(uint16_t channel, double* samples) const
 			{
-				result.failedStep = IOResult::FailedStep::ParseFailed;
-				result.errorMessage = "Could not find data chunk for WAVE file";
-				return;
+				_getSamples(channel, samples);
 			}
 
-			// Load format chunk
-
-			if (rawFormatChunk->data.size() < 14)
+			void File::setSamples(uint16_t channel, const int8_t* samples)
 			{
-				result.failedStep = IOResult::FailedStep::ParseFailed;
-				result.errorMessage = "Format chunk of insufficient size for WAVE file";
-				return;
+				_setSamples(channel, samples);
 			}
 
-			_formatChunk = *reinterpret_cast<wave::FormatChunk*>(rawFormatChunk->data.data());
-
-			if (rawFormatChunk->data.size() < 18)
+			void File::setSamples(uint16_t channel, const int16_t* samples)
 			{
-				_formatChunk.extSize = 0;
+				_setSamples(channel, samples);
 			}
 
-			if (rawFormatChunk->data.size() < 16)
+			void File::setSamples(uint16_t channel, const int32_t* samples)
 			{
-				_formatChunk.bitsPerSample = 8 * (_formatChunk.blockAlign / _formatChunk.channels);
+				_setSamples(channel, samples);
 			}
 
-			if (!_formatChunk.isValid())
+			void File::setSamples(uint16_t channel, const int64_t* samples)
 			{
-				result.failedStep = IOResult::FailedStep::ParseFailed;
-				result.errorMessage = "Invalid format chunk for WAVE file.";
-				return;
+				_setSamples(channel, samples);
 			}
 
-			// Load data chunk
+			void File::setSamples(uint16_t channel, const float* samples)
+			{
+				_setSamples(channel, samples);
+			}
 
-			_sampleCount = dataChunk->data.size() / _formatChunk.blockAlign;
-			_rawSamples = dataChunk->data;
+			void File::setSamples(uint16_t channel, const double* samples)
+			{
+				_setSamples(channel, samples);
+			}
+		
+
+			bool File::isValid() const
+			{
+				return header.isValid() && rawSamples.size() == header.blockAlign * header.blockCount;
+			}
 		}
 
-		void WaveFile::write(std::ostream& stream, IOResult& result)
+
+		const FormatError& WaveStream::readFile(wave::File& file)
 		{
-			RiffFile file;
+			FMTSTREAM_BEGIN_READ();
 
-			file.formType = { 'W', 'A', 'V', 'E' };
+			FMTSTREAM_VERIFY_SELF_CALL(readHeader, file.header);
 
-			file.chunks.resize(2);
+			file.rawSamples.resize(file.header.blockAlign * file.header.blockCount);
+			FMTSTREAM_VERIFY(stream.read((char*) file.rawSamples.data(), file.rawSamples.size()), InvalidStream, "WaveStream: Error while reading samples.");
 
-			file.chunks[0].id = { 'f', 'm', 't', ' ' };
-			file.chunks[0].data.resize(sizeof(wave::FormatChunk));
-			std::memcpy(file.chunks[0].data.data(), &_formatChunk, sizeof(wave::FormatChunk));
+			return error;
+		}
 
-			file.chunks[1].id = { 'd', 'a', 't', 'a' };
-			file.chunks[1].data = _rawSamples;
+		const FormatError& WaveStream::readHeader(wave::Header& header)
+		{
+			FMTSTREAM_BEGIN_READ();
 
-			result = file.writeToStream(stream);
+			RiffStream riffStream;
+			FMTSTREAM_VERIFY_CALL(riffStream, setSource, stream);
+
+			riff::FileHeader fileHeader;
+			FMTSTREAM_VERIFY_CALL(riffStream, readFileHeader, fileHeader);
+			FMTSTREAM_VERIFY(std::equal(fileHeader.formType, fileHeader.formType + 4, "WAVE"), WaveBadFormType, "WaveStream: Bad form-type for RIFF file of WAVE.");
+			
+			// Create index of all chunks in the file
+
+			riff::ChunkHeader chunkHeader;
+			riff::Chunk chunk;
+
+			std::unordered_map<std::string, std::streampos> index;
+
+			fileHeader.size -= 4;
+			while (fileHeader.size)
+			{
+				FMTSTREAM_VERIFY(fileHeader.size >= 8, RiffInvalidFileSize, "WaveStream: Error while reading RIFF chunk. Expected remaining file size to be more than 8, got " + std::to_string(fileHeader.size));
+				fileHeader.size -= 8;
+
+				std::streampos savedPos = riffStream.getSourcePos();
+
+				FMTSTREAM_VERIFY_CALL(riffStream, readChunkHeader, chunkHeader);
+
+				FMTSTREAM_VERIFY(fileHeader.size >= chunkHeader.size, RiffInvalidFileSize, "WaveStream: Error while reading RIFF chunk. Expected remaining file size to be more than chunk size (" + std::to_string(chunkHeader.size) + "), got " + std::to_string(fileHeader.size));
+				fileHeader.size -= chunkHeader.size;
+
+				index[{chunkHeader.id, 4}] = savedPos;
+				FMTSTREAM_VERIFY_CALL(riffStream, setSourcePos, riffStream.getSourcePos() + std::streamoff(chunkHeader.size));
+			}
+
+			FMTSTREAM_VERIFY(index.find("fmt ") != index.end(), WaveNoFmtChunk, "WaveStream: 'fmt ' RIFF chunk not found.");
+			FMTSTREAM_VERIFY(index.find("data") != index.end(), WaveNoDataChunk, "WaveStream: 'data' RIFF chunk not found.");
+
+			// Load "fmt " chunk
+
+			FMTSTREAM_VERIFY_CALL(riffStream, setSourcePos, index["fmt "]);
+			FMTSTREAM_VERIFY_CALL(riffStream, readChunk, chunk);
+			wave::_wave::RawFormatChunk* rawFormatChunk = (wave::_wave::RawFormatChunk*) chunk.data.data();
+
+			header.formatTag = rawFormatChunk->formatTag;
+			header.channels = rawFormatChunk->channels;
+			header.samplesPerSec = rawFormatChunk->samplesPerSec;
+			header.avgBytesPerSec = rawFormatChunk->avgBytesPerSec;
+			header.blockAlign = rawFormatChunk->blockAlign;
+			header.bitsPerSample = rawFormatChunk->bitsPerSample;
+			
+			if (header.formatTag != wave::Format::PCM)
+			{
+				header.extension.resize(rawFormatChunk->extSize);
+			}
+			else
+			{
+				header.extension.clear();
+			}
+
+			if (header.extension.size() > 0)
+			{
+				uint8_t* it = (uint8_t*) (rawFormatChunk + 1);
+				std::copy(it, it + header.extension.size(), header.extension.data());
+			}
+
+			// TODO: Load all metadata chunks
+
+			FMTSTREAM_VERIFY(header.isValid(), WaveInvalidHeader, "WaveStream: Parse of header succeeded but for some reason the header is invalid.");
+
+			// Go to "data" chunk and read size to compute sample block count
+
+			FMTSTREAM_VERIFY_CALL(riffStream, setSourcePos, index["data"]);
+			FMTSTREAM_VERIFY_CALL(riffStream, readChunkHeader, chunkHeader);
+			header.blockCount = chunkHeader.size / header.blockAlign;
+
+			return error;
+		}
+
+		const FormatError& WaveStream::readSampleBlock(const wave::Header& header, int8_t* sampleBlock)
+		{
+			return _readSampleBlock(header, sampleBlock);
+		}
+
+		const FormatError& WaveStream::readSampleBlock(const wave::Header& header, int16_t* sampleBlock)
+		{
+			return _readSampleBlock(header, sampleBlock);
+		}
+
+		const FormatError& WaveStream::readSampleBlock(const wave::Header& header, int32_t* sampleBlock)
+		{
+			return _readSampleBlock(header, sampleBlock);
+		}
+
+		const FormatError& WaveStream::readSampleBlock(const wave::Header& header, int64_t* sampleBlock)
+		{
+			return _readSampleBlock(header, sampleBlock);
+		}
+
+		const FormatError& WaveStream::readSampleBlock(const wave::Header& header, float* sampleBlock)
+		{
+			return _readSampleBlock(header, sampleBlock);
+		}
+
+		const FormatError& WaveStream::readSampleBlock(const wave::Header& header, double* sampleBlock)
+		{
+			return _readSampleBlock(header, sampleBlock);
+		}
+
+		const FormatError& WaveStream::writeFile(const wave::File& file)
+		{
+			assert(file.isValid());
+
+			FMTSTREAM_BEGIN_WRITE();
+
+			FMTSTREAM_VERIFY_SELF_CALL(writeHeader, file.header);
+			FMTSTREAM_VERIFY(stream.write((char*) file.rawSamples.data(), file.rawSamples.size()), InvalidStream, "WaveStream: Error while writing samples.");
+
+			return error;
+		}
+
+		const FormatError& WaveStream::writeHeader(const wave::Header& header)
+		{
+			assert(header.isValid());
+
+			FMTSTREAM_BEGIN_WRITE();
+
+			RiffStream riffStream;
+			FMTSTREAM_VERIFY_CALL(riffStream, setDestination, stream);
+
+			riff::FileHeader fileHeader;
+			std::copy_n("WAVE", 4, fileHeader.formType);
+			fileHeader.size = 4;
+			
+			// Create "fmt " chunk
+
+			riff::Chunk formatChunk;
+			wave::_wave::RawFormatChunk rawFormatChunk;
+			std::copy_n("fmt ", 4, formatChunk.id);
+			rawFormatChunk.formatTag = header.formatTag;
+			rawFormatChunk.channels = header.channels;
+			rawFormatChunk.samplesPerSec = header.samplesPerSec;
+			rawFormatChunk.avgBytesPerSec = header.avgBytesPerSec;
+			rawFormatChunk.blockAlign = header.blockAlign;
+			rawFormatChunk.bitsPerSample = header.bitsPerSample;
+			rawFormatChunk.extSize = header.extension.size();
+
+			if (rawFormatChunk.formatTag == wave::Format::PCM)
+			{
+				formatChunk.data.resize(16);
+				std::copy_n((uint8_t*) &rawFormatChunk, 16, formatChunk.data.data());
+			}
+			else
+			{
+				formatChunk.data.resize(18 + rawFormatChunk.extSize);
+				std::copy_n((uint8_t*) &rawFormatChunk, 18, formatChunk.data.data());
+				std::copy(header.extension.begin(), header.extension.end(), formatChunk.data.data() + 18);
+			}
+
+			fileHeader.size += formatChunk.data.size() + 8;
+
+			// Create metadata chunks
+
+			// Create "data" chunk header
+
+			riff::ChunkHeader dataChunkHeader;
+			std::copy_n("data", 4, dataChunkHeader.id);
+			dataChunkHeader.size = header.blockAlign * header.blockCount;
+
+			fileHeader.size += dataChunkHeader.size + 8;
+
+			// Write everything
+
+			FMTSTREAM_VERIFY_CALL(riffStream, writeFileHeader, fileHeader);
+			FMTSTREAM_VERIFY_CALL(riffStream, writeChunk, formatChunk);
+			FMTSTREAM_VERIFY_CALL(riffStream, writeChunkHeader, dataChunkHeader);
+
+			return error;
+		}
+
+		const FormatError& WaveStream::writeSampleBlock(const wave::Header& header, const int8_t* sampleBlock)
+		{
+			return _writeSampleBlock(header, sampleBlock);
+		}
+
+		const FormatError& WaveStream::writeSampleBlock(const wave::Header& header, const int16_t* sampleBlock)
+		{
+			return _writeSampleBlock(header, sampleBlock);
+		}
+
+		const FormatError& WaveStream::writeSampleBlock(const wave::Header& header, const int32_t* sampleBlock)
+		{
+			return _writeSampleBlock(header, sampleBlock);
+		}
+
+		const FormatError& WaveStream::writeSampleBlock(const wave::Header& header, const int64_t* sampleBlock)
+		{
+			return _writeSampleBlock(header, sampleBlock);
+		}
+
+		const FormatError& WaveStream::writeSampleBlock(const wave::Header& header, const float* sampleBlock)
+		{
+			return _writeSampleBlock(header, sampleBlock);
+		}
+
+		const FormatError& WaveStream::writeSampleBlock(const wave::Header& header, const double* sampleBlock)
+		{
+			return _writeSampleBlock(header, sampleBlock);
 		}
 	}
 }
