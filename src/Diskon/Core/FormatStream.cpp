@@ -115,6 +115,8 @@ namespace dsk
 		}
 
 		_srcStream->seekg(pos);
+
+		return _error;
 	}
 
 	const FormatError& FormatStream::removeSource()
@@ -217,6 +219,8 @@ namespace dsk
 		}
 
 		_dstStream->seekp(pos);
+
+		return _error;
 	}
 
 	const FormatError& FormatStream::removeDestination()

@@ -6,34 +6,30 @@ int main()
 	stream.setSource("build/input_test.wav");
 	stream.setDestination("build/output_test.wav");
 
-	dsk::fmt::wave::File file;
-	stream.readFile(file);
+	dsk::fmt::wave::Header inHeader;
+	stream.readHeader(inHeader);
 
-	dsk::fmt::wave::File copy;
-	copy.header.formatTag = dsk::fmt::wave::Format::PCM;
-	copy.header.channels = file.header.channels;
-	copy.header.samplesPerSec = 22050;
-	copy.header.bitsPerSample = 8;
-	copy.header.blockAlign = ((copy.header.bitsPerSample + 7) / 8) * copy.header.channels;
-	copy.header.avgBytesPerSec = copy.header.blockAlign * copy.header.samplesPerSec;
-	const uint32_t factor = file.header.samplesPerSec / copy.header.samplesPerSec;
-	copy.header.blockCount = file.header.blockCount / factor;
-	copy.rawSamples.resize(copy.header.blockAlign * copy.header.blockCount);
-	
-	int64_t* buffer = new int64_t[file.header.blockCount];
-	for (uint16_t i = 0; i < copy.header.channels; ++i)
+	dsk::fmt::wave::Header outHeader;
+	outHeader.formatTag = dsk::fmt::wave::Format::PCM;
+	outHeader.channels = inHeader.channels;
+	outHeader.samplesPerSec = 22050;
+	outHeader.bitsPerSample = 8;
+	outHeader.blockAlign = ((outHeader.bitsPerSample + 7) / 8) * outHeader.channels;
+	outHeader.avgBytesPerSec = outHeader.blockAlign * outHeader.samplesPerSec;
+	const uint32_t factor = inHeader.samplesPerSec / outHeader.samplesPerSec;
+	outHeader.blockCount = inHeader.blockCount / factor;
+	stream.writeHeader(outHeader);
+
+	double* buffer = (double*)alloca(sizeof(double) * inHeader.channels);
+	for (uint32_t i = 0; i < inHeader.blockCount; ++i)
 	{
-		file.getSamples(i, buffer);
-
-		for (uint32_t j = 0; j < copy.header.blockCount; ++j)
+		for (uint32_t j = 0; j < factor; ++j)
 		{
-			buffer[j] = buffer[factor * j];
+			stream.readSampleBlock(inHeader, buffer);
 		}
 
-		copy.setSamples(i, buffer);
+		stream.writeSampleBlock(outHeader, buffer);
 	}
-
-	stream.writeFile(copy);
 
 	return 0;
 }
