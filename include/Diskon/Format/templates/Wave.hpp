@@ -135,11 +135,11 @@ namespace dsk
 					{
 						if (header.bitsPerSample <= 8)			{ conversionFunction = wave::_wave::convertFromTo<uint8_t, TTo>; }
 						else if (header.bitsPerSample <= 16)	{ conversionFunction = wave::_wave::convertFromTo<int16_t, TTo>; }
-						else if (header.bitsPerSample <= 24)	{ /*TODO*/ }
+						else if (header.bitsPerSample <= 24)	{ conversionFunction = wave::_wave::convertFromTo<SignedInt<24>, TTo>; }
 						else if (header.bitsPerSample <= 32)	{ conversionFunction = wave::_wave::convertFromTo<int32_t, TTo>; }
-						else if (header.bitsPerSample <= 40)	{ /*TODO*/ }
-						else if (header.bitsPerSample <= 48)	{ /*TODO*/ }
-						else if (header.bitsPerSample <= 56)	{ /*TODO*/ }
+						else if (header.bitsPerSample <= 40)	{ conversionFunction = wave::_wave::convertFromTo<SignedInt<40>, TTo>; }
+						else if (header.bitsPerSample <= 48)	{ conversionFunction = wave::_wave::convertFromTo<SignedInt<48>, TTo>; }
+						else if (header.bitsPerSample <= 56)	{ conversionFunction = wave::_wave::convertFromTo<SignedInt<56>, TTo>; }
 						else if (header.bitsPerSample <= 64)	{ conversionFunction = wave::_wave::convertFromTo<int64_t, TTo>; }
 
 						const uint16_t bytesPerSample = (header.bitsPerSample + 7) / 8;
@@ -192,11 +192,11 @@ namespace dsk
 					{
 						if (header.bitsPerSample <= 8)			{ conversionFunction = wave::_wave::convertFromTo<TFrom, uint8_t>; }
 						else if (header.bitsPerSample <= 16)	{ conversionFunction = wave::_wave::convertFromTo<TFrom, int16_t>; }
-						else if (header.bitsPerSample <= 24)	{ /*TODO*/ }
+						else if (header.bitsPerSample <= 24)	{ conversionFunction = wave::_wave::convertFromTo<TFrom, SignedInt<24>>; }
 						else if (header.bitsPerSample <= 32)	{ conversionFunction = wave::_wave::convertFromTo<TFrom, int32_t>; }
-						else if (header.bitsPerSample <= 40)	{ /*TODO*/ }
-						else if (header.bitsPerSample <= 48)	{ /*TODO*/ }
-						else if (header.bitsPerSample <= 56)	{ /*TODO*/ }
+						else if (header.bitsPerSample <= 40)	{ conversionFunction = wave::_wave::convertFromTo<TFrom, SignedInt<40>>; }
+						else if (header.bitsPerSample <= 48)	{ conversionFunction = wave::_wave::convertFromTo<TFrom, SignedInt<48>>; }
+						else if (header.bitsPerSample <= 56)	{ conversionFunction = wave::_wave::convertFromTo<TFrom, SignedInt<56>>; }
 						else if (header.bitsPerSample <= 64)	{ conversionFunction = wave::_wave::convertFromTo<TFrom, int64_t>; }
 
 						const uint16_t bytesPerSample = (header.bitsPerSample + 7) / 8;

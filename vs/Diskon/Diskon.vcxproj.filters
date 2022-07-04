@@ -28,6 +28,9 @@
     <Filter Include="Header Files\Format\templates">
       <UniqueIdentifier>{8c3b4d82-e616-4f85-a6e9-815903196ec1}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Core\templates">
+      <UniqueIdentifier>{620cc6cf-caf7-401a-9005-8a8fb5ec524b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\Diskon\Core\Core.hpp">
@@ -59,6 +62,12 @@
     </ClInclude>
     <ClInclude Include="..\..\include\Diskon\Core\FormatStream.hpp">
       <Filter>Header Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Diskon\Core\Int.hpp">
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Diskon\Core\templates\Int.hpp">
+      <Filter>Header Files\Core\templates</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
