@@ -69,6 +69,12 @@
     <ClInclude Include="..\..\include\Diskon\Core\templates\Int.hpp">
       <Filter>Header Files\Core\templates</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\Diskon\Core\Float.hpp">
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Diskon\Core\templates\Float.hpp">
+      <Filter>Header Files\Core\templates</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\Diskon\Format\Wave.cpp">

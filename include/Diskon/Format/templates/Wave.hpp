@@ -150,7 +150,7 @@ namespace dsk
 					}
 					case wave::Format::Float:
 					{
-						if (header.bitsPerSample == 16)			{ /*TODO*/ }
+						if (header.bitsPerSample == 16)			{ conversionFunction = wave::_wave::convertFromTo<Half, TTo>; }
 						else if (header.bitsPerSample == 32)	{ conversionFunction = wave::_wave::convertFromTo<float, TTo>; }
 						else if (header.bitsPerSample == 64)	{ conversionFunction = wave::_wave::convertFromTo<double, TTo>; }
 
@@ -207,7 +207,7 @@ namespace dsk
 					}
 					case wave::Format::Float:
 					{
-						if (header.bitsPerSample == 16)			{ /*TODO*/ }
+						if (header.bitsPerSample == 16)			{ conversionFunction = wave::_wave::convertFromTo<TFrom, Half>; }
 						else if (header.bitsPerSample == 32)	{ conversionFunction = wave::_wave::convertFromTo<TFrom, float>; }
 						else if (header.bitsPerSample == 64)	{ conversionFunction = wave::_wave::convertFromTo<TFrom, double>; }
 

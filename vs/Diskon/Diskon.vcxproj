@@ -19,9 +19,11 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\include\Diskon\Core\Float.hpp" />
     <ClInclude Include="..\..\include\Diskon\Core\Int.hpp" />
     <ClInclude Include="..\..\include\Diskon\Core\Core.hpp" />
     <ClInclude Include="..\..\include\Diskon\Core\FormatStream.hpp" />
+    <ClInclude Include="..\..\include\Diskon\Core\templates\Float.hpp" />
     <ClInclude Include="..\..\include\Diskon\Core\templates\Int.hpp" />
     <ClInclude Include="..\..\include\Diskon\Core\types.hpp" />
     <ClInclude Include="..\..\include\Diskon\Diskon.hpp" />

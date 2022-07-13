@@ -185,7 +185,7 @@ namespace std
 		static constexpr bool is_bounded = true;
 		static constexpr bool is_modulo = true;
 		static constexpr int digits = BitSize;
-		static constexpr int digits10 = digits * log10(2);
+		static constexpr int digits10 = digits * 0.30103;
 		static constexpr int max_digits10 = 0;
 		static constexpr int radix = 2;
 		static constexpr int min_exponent = 0;
