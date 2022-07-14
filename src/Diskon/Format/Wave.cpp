@@ -175,6 +175,7 @@ namespace dsk
 			FMTSTREAM_VERIFY_CALL(riffStream, setSourcePos, index["fmt "]);
 			FMTSTREAM_VERIFY_CALL(riffStream, readChunk, chunk);
 			wave::_wave::RawFormatChunk* rawFormatChunk = (wave::_wave::RawFormatChunk*) chunk.data.data();
+			FMTSTREAM_VERIFY((rawFormatChunk->formatTag == wave::Format::PCM && chunk.data.size() == 16) || (chunk.data.size() == 18 + rawFormatChunk->extSize), WaveBadFmtChunk, "WaveStream: Bad fmt chunk size: " + std::to_string(chunk.data.size()));
 
 			header.formatTag = rawFormatChunk->formatTag;
 			header.channels = rawFormatChunk->channels;
@@ -182,7 +183,8 @@ namespace dsk
 			header.avgBytesPerSec = rawFormatChunk->avgBytesPerSec;
 			header.blockAlign = rawFormatChunk->blockAlign;
 			header.bitsPerSample = rawFormatChunk->bitsPerSample;
-			
+			header.blockCount = 0;
+
 			if (header.formatTag != wave::Format::PCM)
 			{
 				header.extension.resize(rawFormatChunk->extSize);
@@ -198,15 +200,28 @@ namespace dsk
 				std::copy(it, it + header.extension.size(), header.extension.data());
 			}
 
-			// TODO: Load all metadata chunks
+			// Load "fact" chunk
 
-			FMTSTREAM_VERIFY(header.isValid(), WaveInvalidHeader, "WaveStream: Parse of header succeeded but for some reason the header is invalid.");
+			if (index.find("fact") != index.end())
+			{
+				FMTSTREAM_VERIFY_CALL(riffStream, setSourcePos, index["fact"]);
+				FMTSTREAM_VERIFY_CALL(riffStream, readChunk, chunk);
+				FMTSTREAM_VERIFY(chunk.data.size() == 4, WaveBadFactChunk, "WaveStream: Bad fact chunk size. Expected 4, got " + std::to_string(chunk.data.size()));
+				header.blockCount = *reinterpret_cast<uint32_t*>(chunk.data.data());
+			}
+
+			// TODO: Load Cue Points, Playlist and Associated Data chunks.
 
 			// Go to "data" chunk and read size to compute sample block count
 
+			FMTSTREAM_VERIFY(header.isValid(), WaveInvalidHeader, "WaveStream: Parse of header succeeded but for some reason the header is invalid.");
+
 			FMTSTREAM_VERIFY_CALL(riffStream, setSourcePos, index["data"]);
 			FMTSTREAM_VERIFY_CALL(riffStream, readChunkHeader, chunkHeader);
-			header.blockCount = chunkHeader.size / header.blockAlign;
+			if (header.blockCount == 0)
+			{
+				header.blockCount = chunkHeader.size / header.blockAlign;
+			}
 
 			return error;
 		}
@@ -293,7 +308,19 @@ namespace dsk
 
 			fileHeader.size += formatChunk.data.size() + 8;
 
-			// Create metadata chunks
+			// Create "fact" chunk
+
+			riff::Chunk factChunk;
+			if (header.formatTag != wave::Format::PCM)
+			{
+				std::copy_n("fact", 4, factChunk.id);
+				factChunk.data.resize(4);
+				*reinterpret_cast<uint32_t*>(factChunk.data.data()) = header.blockCount;
+
+				fileHeader.size += factChunk.data.size() + 8;
+			}
+
+			// TODO: Create Cue Points, Playlist and Associated Data chunks.
 
 			// Create "data" chunk header
 
@@ -307,6 +334,12 @@ namespace dsk
 
 			FMTSTREAM_VERIFY_CALL(riffStream, writeFileHeader, fileHeader);
 			FMTSTREAM_VERIFY_CALL(riffStream, writeChunk, formatChunk);
+
+			if (header.formatTag != wave::Format::PCM)
+			{
+				FMTSTREAM_VERIFY_CALL(riffStream, writeChunk, factChunk);
+			}
+
 			FMTSTREAM_VERIFY_CALL(riffStream, writeChunkHeader, dataChunkHeader);
 
 			return error;

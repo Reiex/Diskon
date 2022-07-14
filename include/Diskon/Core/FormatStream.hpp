@@ -40,6 +40,8 @@ namespace dsk
 
 			WaveBadFormType,
 			WaveNoFmtChunk,
+			WaveBadFmtChunk,
+			WaveBadFactChunk,
 			WaveNoDataChunk,
 			WaveInvalidHeader
 
