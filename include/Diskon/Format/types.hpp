@@ -25,7 +25,14 @@ namespace dsk
 		
 		namespace xml
 		{
-
+			struct Declaration;
+			struct DocType;
+			struct ProcessingInstruction;
+			struct ElementData;
+			struct Element;
+			struct ElementTree;
+			struct Prolog;
+			struct File;
 		}
 		class XmlStream;
 	}

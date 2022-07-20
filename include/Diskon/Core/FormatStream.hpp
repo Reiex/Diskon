@@ -43,9 +43,15 @@ namespace dsk
 			WaveBadFmtChunk,
 			WaveBadFactChunk,
 			WaveNoDataChunk,
-			WaveInvalidHeader
+			WaveInvalidHeader,
 
 			// Xml
+
+			XmlInvalidComment,
+			XmlInvalidDeclaration,
+			XmlInvalidDoctype,
+			XmlInvalidProcessingInstruction,
+			XmlInvalidElement,
 		};
 
 		ErrorCode errorCode;

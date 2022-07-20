@@ -6,75 +6,105 @@ namespace dsk
 {
 	namespace fmt
 	{
-		/*namespace xml
+		namespace xml
 		{
-			struct XmlDeclaration
+			struct Declaration
 			{
 				uint16_t versionMajor;
 				uint16_t versionMinor;
-				std::string encoding;
-				bool standalone;
-
-				void read(std::istream& stream, IOResult& result);
-				void write(std::ostream& stream, IOResult& result);
+				std::optional<std::string> encoding;
+				std::optional<bool> standalone;
 			};
 
-			struct ProcessingInstructions
-			{
-				std::string target;
-				std::string instruction;
-
-				void read(std::istream& stream, IOResult& result);
-				void write(std::ostream& stream, IOResult& result);
-			};
-
-			struct DocumentType
+			struct DocType
 			{
 				std::string name;
 				// TODO
-
-				void read(std::istream& stream, IOResult& result);
-				void write(std::ostream& stream, IOResult& result);
 			};
 
-			struct XmlElement
+			struct ProcessingInstruction
+			{
+				std::string target;
+				std::string instruction;
+			};
+
+			struct ElementData
 			{
 				std::string tag;
 				std::unordered_map<std::string, std::string> attributes;
-				std::vector<XmlElement> childs;
+				std::vector<ProcessingInstruction> processingInstructions;
+				// TODO: CDSect
 				std::string content;
+			};
 
-				void read(std::istream& stream, IOResult& result);
-				void write(std::ostream& stream, IOResult& result);
+			struct Element
+			{
+				ElementData data;
+				std::vector<std::streampos> childs;
+				std::streampos endOfElement;
+			};
+
+			struct ElementTree
+			{
+				ElementData data;
+				std::vector<ElementTree> childs;
+				std::streampos endOfElement;
+			};
+
+			struct Prolog
+			{
+				std::optional<Declaration> declaration;
+				std::optional<DocType> doctype;
+				std::vector<ProcessingInstruction> processingInstructions;
+			};
+
+			struct File
+			{
+				Prolog prolog;
+				ElementTree rootTree;
 			};
 		}
 
-		class XmlFile : public FormatHandler
+		class XmlStream : public FormatStream
 		{
 			public:
 
-				XmlFile();
-				XmlFile(const XmlFile& file) = default;
-				XmlFile(XmlFile&& file) = default;
+				XmlStream() = default;
+				XmlStream(const XmlStream& stream) = default;
+				XmlStream(XmlStream&& stream) = default;
 
-				XmlFile& operator=(const XmlFile& file) = default;
-				XmlFile& operator=(XmlFile&& file) = default;
-				
-				void clear() override;
+				XmlStream& operator=(const XmlStream& stream) = default;
+				XmlStream& operator=(XmlStream&& stream) = default;
 
-				~XmlFile() = default;
+				~XmlStream() = default;
+
+				const FormatError& readFile(xml::File& file);
+				const FormatError& readProlog(xml::Prolog& prolog);
+				const FormatError& readElementTree(xml::ElementTree& elementTree);	//! Reads the whole tree, place the cursor on the next start of element (after element tree)
+				const FormatError& readElement(xml::Element& element);				//! Reads everything except the childs, place the cursor on the next start of element (including inside element tree)
+
+				const FormatError& writeFile(const xml::File& file);
+				const FormatError& writeProlog(const xml::Prolog& prolog);
+				const FormatError& writeDeclaration(const xml::Declaration& declaration);
+				const FormatError& writeDoctype(const xml::DocType& doctype);
+				const FormatError& writeProcessingInstruction(const xml::ProcessingInstruction& instruction);
+				const FormatError& writeElementTree(const xml::ElementTree& elementTree);	//! Cursor right after tree
+				const FormatError& writeElementData(const xml::ElementData& elementData);	//! Cursor after content (and PIs, etc...)
+				const FormatError& writeAscend(uint32_t count);
 
 			private:
 
-				void read(std::istream& stream, IOResult& result) override;
-				void write(std::ostream& stream, IOResult& result) override;
+				const FormatError& readSpaces(bool& parsedSomething);
+				const FormatError& readComment(bool& parsedSomething);
+				
+				const FormatError& readName(std::string& name);
+				const FormatError& readSTag(xml::ElementData& elementData, bool& emptyElement);
+				const FormatError& readETag(const std::string& tag);
 
-				bool _hasDeclaration;
-				xml::XmlDeclaration _declaration;
-				bool _hasDoctype;
-				xml::DocumentType _doctype;
-				std::vector<xml::ProcessingInstructions> _processingInstructions;
-				xml::XmlElement _root;
-		};*/
+				const FormatError& readDeclaration(xml::Declaration& declaration, bool& parsedSomething);
+				const FormatError& readDoctype(xml::DocType& doctype, bool& parsedSomething);
+				const FormatError& readProcessingInstruction(xml::ProcessingInstruction& instruction, bool& parsedSomething);
+				const FormatError& readPIsSpacesAndComments(std::vector<xml::ProcessingInstruction>& instructions);
+		};
 	}
 }

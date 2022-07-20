@@ -30,6 +30,8 @@ namespace dsk
 				std::vector<uint8_t> extension;
 
 				bool isValid() const;
+
+				// TODO: More abstract header (no "avgBytesPerSec", no "blockAlign"... renaming things...)
 			};
 
 			struct File
@@ -72,11 +74,11 @@ namespace dsk
 			public:
 
 				WaveStream() = default;
-				WaveStream(const WaveStream& file) = default;
-				WaveStream(WaveStream&& file) = default;
+				WaveStream(const WaveStream& stream) = default;
+				WaveStream(WaveStream&& stream) = default;
 
-				WaveStream& operator=(const WaveStream& file) = default;
-				WaveStream& operator=(WaveStream&& file) = default;
+				WaveStream& operator=(const WaveStream& stream) = default;
+				WaveStream& operator=(WaveStream&& stream) = default;
 
 				const FormatError& readFile(wave::File& file);
 				const FormatError& readHeader(wave::Header& header);

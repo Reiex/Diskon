@@ -2,11 +2,13 @@
 
 #include <array>
 #include <cassert>
+#include <cctype>
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <limits>
+#include <optional>
 #include <sstream>
 #include <string>
 #include <tuple>
