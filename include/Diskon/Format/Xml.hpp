@@ -105,6 +105,9 @@ namespace dsk
 				const FormatError& readDoctype(xml::DocType& doctype, bool& parsedSomething);
 				const FormatError& readProcessingInstruction(xml::ProcessingInstruction& instruction, bool& parsedSomething);
 				const FormatError& readPIsSpacesAndComments(std::vector<xml::ProcessingInstruction>& instructions);
+				const FormatError& readRawElement(void* elementPtr, bool tree);
+
+				std::stack<std::string> _tagStack;
 		};
 	}
 }

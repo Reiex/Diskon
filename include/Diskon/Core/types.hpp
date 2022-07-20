@@ -10,6 +10,7 @@
 #include <limits>
 #include <optional>
 #include <sstream>
+#include <stack>
 #include <string>
 #include <tuple>
 #include <type_traits>

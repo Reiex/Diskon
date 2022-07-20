@@ -4,6 +4,63 @@ namespace dsk
 {
 	namespace fmt
 	{
+		namespace
+		{
+			bool isNameStartChar(char x)
+			{
+				return std::isalpha(x) || x == ':' || x == '_';
+			}
+
+			bool isNameChar(char x)
+			{
+				return isNameStartChar(x) || std::isdigit(x) || x == '-' || x == '.';
+			}
+		
+			bool isName(const std::string& name)
+			{
+				if (name.empty())
+				{
+					return false;
+				}
+
+				if (!isNameStartChar(name.front()))
+				{
+					return false;
+				}
+
+				for (const char& x : name)
+				{
+					if (!isNameChar(x))
+					{
+						return false;
+					}
+				}
+
+				return true;
+			}
+		
+			bool isEncName(const std::string& name)
+			{
+				if (name.empty())
+				{
+					return false;
+				}
+
+				if (!std::isalpha(name.front()))
+				{
+					return false;
+				}
+
+				for (const char& x : name)
+				{
+					if (!(std::isalnum(x) || x == '.' || x == '_' || x == '-'))
+					{
+						return false;
+					}
+				}
+			}
+		}
+
 		const FormatError& XmlStream::readFile(xml::File& file)
 		{
 			FMTSTREAM_BEGIN_READ();
@@ -85,181 +142,20 @@ namespace dsk
 
 		const FormatError& XmlStream::readElementTree(xml::ElementTree& elementTree)
 		{
-			FMTSTREAM_BEGIN_READ();
-
-			char buffer[2];
-			bool parsedSomething;
-
-			elementTree.data.content.clear();
-			elementTree.data.processingInstructions.clear();
-			elementTree.childs.clear();
-
-			// Read STag
-
-			bool emptyElement;
-			FMTSTREAM_VERIFY_SELF_CALL(readSTag, elementTree.data, emptyElement);
-			if (emptyElement)
-			{
-				return error;
-			}
-
-			// Read content
-
-			FMTSTREAM_VERIFY(stream.read(buffer, 2), InvalidStream, "XmlStream: Error while starting to read element content.");
-			while (buffer[0] != '<' || buffer[1] != '/')
-			{
-				if (buffer[0] == '<')
-				{
-					FMTSTREAM_VERIFY(stream.putback(buffer[1]), InvalidStream, "XmlStream::readElementTree: Error while putting back character.");
-					FMTSTREAM_VERIFY(stream.putback(buffer[0]), InvalidStream, "XmlStream::readElementTree: Error while putting back character.");
-
-					if (buffer[1] == '?')
-					{
-						elementTree.data.processingInstructions.emplace_back();
-						FMTSTREAM_VERIFY_SELF_CALL(readProcessingInstruction, elementTree.data.processingInstructions.back(), parsedSomething);
-					}
-					else if (buffer[1] == '!')
-					{
-						FMTSTREAM_VERIFY_SELF_CALL(readComment, parsedSomething);
-						FMTSTREAM_VERIFY(parsedSomething, XmlInvalidElement, "XmlStream: Expected comment but could not parse one in element.");
-						// TODO: if (!parsedSomehting) readCDSect();
-					}
-					else
-					{
-						elementTree.childs.emplace_back();
-						FMTSTREAM_VERIFY_SELF_CALL(readElementTree, elementTree.childs.back());
-					}
-
-					FMTSTREAM_VERIFY(stream.read(buffer, 2), InvalidStream, "XmlStream: Error while reading element content.");
-				}
-				else
-				{
-					elementTree.data.content.push_back(buffer[0]);
-					buffer[0] = buffer[1];
-					FMTSTREAM_VERIFY(stream.read(buffer + 1, 1), InvalidStream, "XmlStream: Error while reading element content.");
-				}
-			}
-			FMTSTREAM_VERIFY(stream.putback(buffer[1]), InvalidStream, "XmlStream::readElementTree: Error while putting back character.");
-			FMTSTREAM_VERIFY(stream.putback(buffer[0]), InvalidStream, "XmlStream::readElementTree: Error while putting back character.");
-
-			// Read ETag
-
-			FMTSTREAM_VERIFY_SELF_CALL(readETag, elementTree.data.tag);
-			elementTree.endOfElement = getSourcePos();
-
-			// Go to next element
-
-			stream.read(buffer, 2);
-			while (stream && !(buffer[0] == '<' && (buffer[1] != '?' && buffer[1] != '!')))
-			{
-				buffer[0] = buffer[1];
-				stream.read(buffer + 1, 1);
-			}
-
-			if (stream.eof())
-			{
-				stream.clear();
-				return error;
-			}
-
-			FMTSTREAM_VERIFY(stream, InvalidStream, "XmlStream::readElementTree: Error while searching next element.");
-			FMTSTREAM_VERIFY(stream.putback(buffer[1]), InvalidStream, "XmlStream::readElementTree: Error while putting back character.");
-			FMTSTREAM_VERIFY(stream.putback(buffer[0]), InvalidStream, "XmlStream::readElementTree: Error while putting back character.");
-
-			return error;
+			return readRawElement(&elementTree, true);
 		}
 
 		const FormatError& XmlStream::readElement(xml::Element& element)
 		{
-			FMTSTREAM_BEGIN_READ();
-
-			char buffer[2];
-			bool parsedSomething;
-
-			element.data.content.clear();
-			element.data.processingInstructions.clear();
-			element.childs.clear();
-
-			// Read STag
-
-			bool emptyElement;
-			FMTSTREAM_VERIFY_SELF_CALL(readSTag, element.data, emptyElement);
-			if (emptyElement)
-			{
-				return error;
-			}
-
-			// Read content
-
-			FMTSTREAM_VERIFY(stream.read(buffer, 2), InvalidStream, "XmlStream: Error while starting to read element content.");
-			while (buffer[0] != '<' || buffer[1] != '/')
-			{
-				if (buffer[0] == '<')
-				{
-					FMTSTREAM_VERIFY(stream.putback(buffer[1]), InvalidStream, "XmlStream::readElement: Error while putting back character.");
-					FMTSTREAM_VERIFY(stream.putback(buffer[0]), InvalidStream, "XmlStream::readElement: Error while putting back character.");
-
-					if (buffer[1] == '?')
-					{
-						element.data.processingInstructions.emplace_back();
-						FMTSTREAM_VERIFY_SELF_CALL(readProcessingInstruction, element.data.processingInstructions.back(), parsedSomething);
-					}
-					else if (buffer[1] == '!')
-					{
-						FMTSTREAM_VERIFY_SELF_CALL(readComment, parsedSomething);
-						FMTSTREAM_VERIFY(parsedSomething, XmlInvalidElement, "XmlStream: Expected comment but could not parse one in element.");
-						// TODO: if (!parsedSomehting) readCDSect();
-					}
-					else
-					{
-						// TODO: Function for not parsing child !
-						element.childs.emplace_back(getSourcePos());
-						xml::Element child;
-						FMTSTREAM_VERIFY_SELF_CALL(readElement, child);
-					}
-
-					FMTSTREAM_VERIFY(stream.read(buffer, 2), InvalidStream, "XmlStream: Error while reading element content.");
-				}
-				else
-				{
-					element.data.content.push_back(buffer[0]);
-					buffer[0] = buffer[1];
-					FMTSTREAM_VERIFY(stream.read(buffer + 1, 1), InvalidStream, "XmlStream: Error while reading element content.");
-				}
-			}
-			FMTSTREAM_VERIFY(stream.putback(buffer[1]), InvalidStream, "XmlStream::readElement: Error while putting back character.");
-			FMTSTREAM_VERIFY(stream.putback(buffer[0]), InvalidStream, "XmlStream::readElement: Error while putting back character.");
-
-			// Read ETag
-
-			FMTSTREAM_VERIFY_SELF_CALL(readETag, element.data.tag);
-			element.endOfElement = getSourcePos();
-
-			// Go to next element
-
-			stream.read(buffer, 2);
-			while (stream && !(buffer[0] == '<' && (buffer[1] != '?' && buffer[1] != '!')))
-			{
-				buffer[0] = buffer[1];
-				stream.read(buffer + 1, 1);
-			}
-
-			if (stream.eof())
-			{
-				stream.clear();
-				return error;
-			}
-
-			FMTSTREAM_VERIFY(stream, InvalidStream, "XmlStream::readElement: Error while searching next element.");
-			FMTSTREAM_VERIFY(stream.putback(buffer[1]), InvalidStream, "XmlStream::readElement: Error while putting back character.");
-			FMTSTREAM_VERIFY(stream.putback(buffer[0]), InvalidStream, "XmlStream::readElement: Error while putting back character.");
-
-			return error;
+			return readRawElement(&element, false);
 		}
 
 		const FormatError& XmlStream::writeFile(const xml::File& file)
 		{
 			FMTSTREAM_BEGIN_WRITE();
+
+			FMTSTREAM_VERIFY_SELF_CALL(writeProlog, file.prolog);
+			FMTSTREAM_VERIFY_SELF_CALL(writeElementTree, file.rootTree);
 
 			return error;
 		}
@@ -268,26 +164,82 @@ namespace dsk
 		{
 			FMTSTREAM_BEGIN_WRITE();
 
+			if (prolog.declaration.has_value())
+			{
+				FMTSTREAM_VERIFY_SELF_CALL(writeDeclaration, prolog.declaration.value());
+			}
+
+			if (prolog.doctype.has_value())
+			{
+				FMTSTREAM_VERIFY_SELF_CALL(writeDoctype, prolog.doctype.value());
+			}
+
+			for (const xml::ProcessingInstruction& instruction : prolog.processingInstructions)
+			{
+				FMTSTREAM_VERIFY_SELF_CALL(writeProcessingInstruction, instruction);
+			}
+
 			return error;
 		}
 
 		const FormatError& XmlStream::writeDeclaration(const xml::Declaration& declaration)
 		{
+			assert(declaration.versionMajor == 1);
+			assert(!declaration.encoding.has_value() || isEncName(declaration.encoding.value()));
+			
 			FMTSTREAM_BEGIN_WRITE();
+
+			std::string str = "<?xml version='" + std::to_string(declaration.versionMajor) + "." + std::to_string(declaration.versionMinor) + "'";
+
+			if (declaration.encoding.has_value())
+			{
+				str += " encoding='" + declaration.encoding.value() + "'";
+			}
+			
+			if (declaration.standalone.has_value())
+			{
+				if (declaration.standalone.value())
+				{
+					str += " standalone='yes'";
+				}
+				else
+				{
+					str += " standalone='no'";
+				}
+			}
+
+			str += "?>";
+
+			FMTSTREAM_VERIFY(stream.write(str.data(), str.size()), InvalidStream, "XmlStream: Error while writing XML declaration.");
 
 			return error;
 		}
 
 		const FormatError& XmlStream::writeDoctype(const xml::DocType& doctype)
 		{
+			assert(isName(doctype.name));
+
 			FMTSTREAM_BEGIN_WRITE();
+
+			std::string str = "<!DOCTYPE " + doctype.name + ">";
+			FMTSTREAM_VERIFY(stream.write(str.data(), str.size()), InvalidStream, "XmlStream: Error while writing doctype.");
 
 			return error;
 		}
 
 		const FormatError& XmlStream::writeProcessingInstruction(const xml::ProcessingInstruction& instruction)
 		{
+			assert(isName(instruction.target));
+			assert(instruction.target.size() != 3
+				|| std::toupper(instruction.target[0]) != 'X'
+				|| std::toupper(instruction.target[1]) != 'M'
+				|| std::toupper(instruction.target[2]) != 'L');
+
 			FMTSTREAM_BEGIN_WRITE();
+
+			std::string str = "<?" + instruction.target + " " + instruction.instruction + "?>";
+
+			FMTSTREAM_VERIFY(stream.write(str.data(), str.size()), InvalidStream, "XmlStream: Error while writing processing instruction.");
 
 			return error;
 		}
@@ -296,19 +248,58 @@ namespace dsk
 		{
 			FMTSTREAM_BEGIN_WRITE();
 
+			FMTSTREAM_VERIFY_SELF_CALL(writeElementData, elementTree.data);
+			for (const xml::ElementTree& child : elementTree.childs)
+			{
+				FMTSTREAM_VERIFY_SELF_CALL(writeElementTree, child);
+			}
+			FMTSTREAM_VERIFY_SELF_CALL(writeAscend, 1);
+
 			return error;
 		}
 
 		const FormatError& XmlStream::writeElementData(const xml::ElementData& elementData)
 		{
+			assert(isName(elementData.tag));
+			// TODO: Verify elementData.content
+			// TODO: Handle ''' and '"' in attribute values (and handle references generally, at lecture as well)
+
 			FMTSTREAM_BEGIN_WRITE();
+
+			std::string str = "<" + elementData.tag;
+			for (const std::pair<std::string, std::string>& attribute : elementData.attributes)
+			{
+				assert(isName(attribute.first));
+				str += " " + attribute.first + "=\"" + attribute.second + "\"";
+			}
+			str += ">";
+
+			FMTSTREAM_VERIFY(stream.write(str.data(), str.size()), InvalidStream, "XmlStream: Error while writing element start tag.");
+
+			for (const xml::ProcessingInstruction& instruction : elementData.processingInstructions)
+			{
+				FMTSTREAM_VERIFY_SELF_CALL(writeProcessingInstruction, instruction);
+			}
+
+			FMTSTREAM_VERIFY(stream.write(elementData.content.data(), elementData.content.size()), InvalidStream, "XmlStream: Error while writing element content.");
+			
+			_tagStack.push(elementData.tag);
 
 			return error;
 		}
 
 		const FormatError& XmlStream::writeAscend(uint32_t count)
 		{
+			assert(_tagStack.size() >= count);
+
 			FMTSTREAM_BEGIN_WRITE();
+
+			for (uint32_t i = 0; i < count; ++i)
+			{
+				std::string str = "</" + _tagStack.top() + ">";
+				FMTSTREAM_VERIFY(stream.write(str.data(), str.size()), InvalidStream, "XmlStream: Error while writing element end tag.");
+				_tagStack.pop();
+			}
 
 			return error;
 		}
@@ -366,19 +357,6 @@ namespace dsk
 			FMTSTREAM_VERIFY(buffer[0] == '>', XmlInvalidComment, "XmlStream: Invalid double-hyphen ('--') in an XML comment without '>' behind it.");
 
 			return error;
-		}
-
-		namespace
-		{
-			bool isNameStartChar(char x)
-			{
-				return std::isalpha(x) || x == ':' || x == '_';
-			}
-
-			bool isNameChar(char x)
-			{
-				return isNameStartChar(x) || std::isdigit(x) || x == '-' || x == '.';
-			}
 		}
 
 		const FormatError& XmlStream::readName(std::string& name)
@@ -693,8 +671,8 @@ namespace dsk
 
 			FMTSTREAM_VERIFY_SELF_CALL(readName, instruction.target);
 			FMTSTREAM_VERIFY(!instruction.target.empty(), XmlInvalidProcessingInstruction, "XmlStream: Error while parsing processing instruction target.");
-			bool targetStartNotXML =
-				std::toupper(instruction.target[0]) != 'X'
+			bool targetStartNotXML = instruction.target.size() != 3
+				|| std::toupper(instruction.target[0]) != 'X'
 				|| std::toupper(instruction.target[1]) != 'M'
 				|| std::toupper(instruction.target[2]) != 'L';
 			FMTSTREAM_VERIFY(targetStartNotXML, XmlInvalidProcessingInstruction, "XmlStream: PI Target cannot starts with 'XML'. PI Target: '" + instruction.target + "'.");
@@ -741,6 +719,127 @@ namespace dsk
 
 				FMTSTREAM_VERIFY_SELF_CALL(readProcessingInstruction, instruction, parsedPI);
 			}
+
+			return error;
+		}
+	
+		const FormatError& XmlStream::readRawElement(void* elementPtr, bool tree)
+		{
+			FMTSTREAM_BEGIN_READ();
+
+			char buffer[2];
+			bool parsedSomething;
+
+			xml::ElementTree* elementTree = nullptr;
+			xml::Element* element = nullptr;
+			xml::ElementData* elementData = nullptr;
+			
+			if (tree)
+			{
+				elementTree = reinterpret_cast<xml::ElementTree*>(elementPtr);
+				elementData = &elementTree->data;
+				elementData->content.clear();
+				elementData->processingInstructions.clear();
+				elementTree->childs.clear();
+			}
+			else
+			{
+				element = reinterpret_cast<xml::Element*>(elementPtr);
+				elementData = &element->data;
+				elementData->content.clear();
+				elementData->processingInstructions.clear();
+				element->childs.clear();
+			}
+
+			// Read STag
+
+			bool emptyElement;
+			FMTSTREAM_VERIFY_SELF_CALL(readSTag, *elementData, emptyElement);
+			if (emptyElement)
+			{
+				return error;
+			}
+
+			// Read content
+
+			FMTSTREAM_VERIFY(stream.read(buffer, 2), InvalidStream, "XmlStream: Error while starting to read element content.");
+			while (buffer[0] != '<' || buffer[1] != '/')
+			{
+				if (buffer[0] == '<')
+				{
+					FMTSTREAM_VERIFY(stream.putback(buffer[1]), InvalidStream, "XmlStream::readElementTree: Error while putting back character.");
+					FMTSTREAM_VERIFY(stream.putback(buffer[0]), InvalidStream, "XmlStream::readElementTree: Error while putting back character.");
+
+					if (buffer[1] == '?')
+					{
+						elementData->processingInstructions.emplace_back();
+						FMTSTREAM_VERIFY_SELF_CALL(readProcessingInstruction, elementData->processingInstructions.back(), parsedSomething);
+					}
+					else if (buffer[1] == '!')
+					{
+						FMTSTREAM_VERIFY_SELF_CALL(readComment, parsedSomething);
+						FMTSTREAM_VERIFY(parsedSomething, XmlInvalidElement, "XmlStream: Expected comment but could not parse one in element.");
+						// TODO: if (!parsedSomehting) readCDSect();
+					}
+					else
+					{
+						if (tree)
+						{
+							elementTree->childs.emplace_back();
+							FMTSTREAM_VERIFY_SELF_CALL(readRawElement, &elementTree->childs.back(), true);
+						}
+						else
+						{
+							element->childs.emplace_back(getSourcePos());
+
+							// TODO: Read element without parsing tree
+							xml::Element elt;
+							FMTSTREAM_VERIFY_SELF_CALL(readRawElement, &elt, false);
+						}
+					}
+
+					FMTSTREAM_VERIFY(stream.read(buffer, 2), InvalidStream, "XmlStream: Error while reading element content.");
+				}
+				else
+				{
+					elementData->content.push_back(buffer[0]);
+					buffer[0] = buffer[1];
+					FMTSTREAM_VERIFY(stream.read(buffer + 1, 1), InvalidStream, "XmlStream: Error while reading element content.");
+				}
+			}
+			FMTSTREAM_VERIFY(stream.putback(buffer[1]), InvalidStream, "XmlStream::readElementTree: Error while putting back character.");
+			FMTSTREAM_VERIFY(stream.putback(buffer[0]), InvalidStream, "XmlStream::readElementTree: Error while putting back character.");
+
+			// Read ETag
+
+			FMTSTREAM_VERIFY_SELF_CALL(readETag, elementData->tag);
+			if (tree)
+			{
+				elementTree->endOfElement = getSourcePos();
+			}
+			else
+			{
+				element->endOfElement = getSourcePos();
+			}
+
+			// Go to next element
+
+			stream.read(buffer, 2);
+			while (stream && !(buffer[0] == '<' && (buffer[1] != '?' && buffer[1] != '!')))
+			{
+				buffer[0] = buffer[1];
+				stream.read(buffer + 1, 1);
+			}
+
+			if (stream.eof())
+			{
+				stream.clear();
+				return error;
+			}
+
+			FMTSTREAM_VERIFY(stream, InvalidStream, "XmlStream::readElementTree: Error while searching next element.");
+			FMTSTREAM_VERIFY(stream.putback(buffer[1]), InvalidStream, "XmlStream::readElementTree: Error while putting back character.");
+			FMTSTREAM_VERIFY(stream.putback(buffer[0]), InvalidStream, "XmlStream::readElementTree: Error while putting back character.");
 
 			return error;
 		}

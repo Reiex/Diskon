@@ -37,5 +37,8 @@ int main()
 	dsk::fmt::xml::File xmlFile;
 	stream.readFile(xmlFile);
 
-	return 0;
+	stream.setDestination("build/output_test.xml");
+	stream.writeFile(xmlFile);
+
+ 	return 0;
 }
