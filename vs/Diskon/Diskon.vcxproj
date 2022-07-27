@@ -28,6 +28,7 @@
     <ClInclude Include="..\..\include\Diskon\Core\types.hpp" />
     <ClInclude Include="..\..\include\Diskon\Diskon.hpp" />
     <ClInclude Include="..\..\include\Diskon\Format\Format.hpp" />
+    <ClInclude Include="..\..\include\Diskon\Format\Png.hpp" />
     <ClInclude Include="..\..\include\Diskon\Format\Riff.hpp" />
     <ClInclude Include="..\..\include\Diskon\Format\templates\Wave.hpp" />
     <ClInclude Include="..\..\include\Diskon\Format\types.hpp" />
@@ -35,6 +36,7 @@
     <ClInclude Include="..\..\include\Diskon\Format\Xml.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\src\Diskon\Format\Png.cpp" />
     <ClCompile Include="..\..\src\Diskon\Format\Riff.cpp" />
     <ClCompile Include="..\..\src\Diskon\Core\FormatStream.cpp" />
     <ClCompile Include="..\..\src\Diskon\Format\Wave.cpp" />
@@ -126,7 +128,7 @@
       <PrecompiledHeaderFile>
       </PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>$(SolutionDir)include\</AdditionalIncludeDirectories>
-      <LanguageStandard>stdcpp20</LanguageStandard>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>

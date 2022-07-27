@@ -31,14 +31,20 @@ int main()
 	// 	stream.writeSampleBlock(outHeader, buffer);
 	// }
 
-	dsk::fmt::XmlStream stream;
-	stream.setSource("build/input_test.xml");
+	// dsk::fmt::XmlStream stream;
+	// stream.setSource("build/input_test.xml");
+	// 
+	// dsk::fmt::xml::File xmlFile;
+	// stream.readFile(xmlFile);
+	// 
+	// stream.setDestination("build/output_test.xml");
+	// stream.writeFile(xmlFile);
 
-	dsk::fmt::xml::File xmlFile;
-	stream.readFile(xmlFile);
+	dsk::fmt::PngStream stream;
+	stream.setSource("build/input_test.png");
 
-	stream.setDestination("build/output_test.xml");
-	stream.writeFile(xmlFile);
+	dsk::fmt::png::File pngFile;
+	stream.readFile(pngFile);
 
  	return 0;
 }

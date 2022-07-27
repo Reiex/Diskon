@@ -35,6 +35,8 @@ namespace dsk
 
 		class RiffStream : public FormatStream
 		{
+			// TODO: Handle endianness
+
 			public:
 
 				RiffStream() = default;

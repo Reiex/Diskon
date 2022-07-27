@@ -30,6 +30,13 @@ namespace dsk
 			NoStream,
 			ParseFailed,
 
+			// Png
+
+			PngInvalidSignature,
+			PngInvalidChunkType,
+			PngInvalidChunkSize,
+			PngInvalidChunkContent,
+
 			// Riff
 
 			RiffIdentifierNotFound,
@@ -94,11 +101,18 @@ namespace dsk
 
 			FormatStream();
 
+			// template<typename T>
+			// const FormatError& streamRead(T& value);
+			// template<typename T>
+			// const FormatError& streamWrite(const T& value);
+
+			FormatError _error;
+
+		// private:
+
 			std::istream* _srcStream;
 			bool _srcStreamOwned;
 			std::ostream* _dstStream;
 			bool _dstStreamOwned;
-
-			FormatError _error;
 	};
 }

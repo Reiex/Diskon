@@ -65,8 +65,8 @@ namespace dsk
 		{
 			FMTSTREAM_BEGIN_READ();
 
-			FMTSTREAM_VERIFY_SELF_CALL(readProlog, file.prolog);
-			FMTSTREAM_VERIFY_SELF_CALL(readElementTree, file.rootTree);
+			FMTSTREAM_VERIFY_CALL(readProlog, file.prolog);
+			FMTSTREAM_VERIFY_CALL(readElementTree, file.rootTree);
 
 			return error;
 		}
@@ -80,7 +80,7 @@ namespace dsk
 			// Load XML declaration
 
 			xml::Declaration declaration;
-			FMTSTREAM_VERIFY_SELF_CALL(readDeclaration, declaration, parsedSomething);
+			FMTSTREAM_VERIFY_CALL(readDeclaration, declaration, parsedSomething);
 			if (parsedSomething)
 			{
 				prolog.declaration = declaration;
@@ -92,12 +92,12 @@ namespace dsk
 
 			// Load PIs, spaces and comments between declaration and doctype
 
-			FMTSTREAM_VERIFY_SELF_CALL(readPIsSpacesAndComments, prolog.processingInstructions);
+			FMTSTREAM_VERIFY_CALL(readPIsSpacesAndComments, prolog.processingInstructions);
 
 			// Load doctype
 
 			xml::DocType doctype;
-			FMTSTREAM_VERIFY_SELF_CALL(readDoctype, doctype, parsedSomething);
+			FMTSTREAM_VERIFY_CALL(readDoctype, doctype, parsedSomething);
 			if (parsedSomething)
 			{
 				prolog.doctype = doctype;
@@ -109,14 +109,14 @@ namespace dsk
 
 			// Load PIs, spaces and comments between doctype and XML tree
 
-			FMTSTREAM_VERIFY_SELF_CALL(readPIsSpacesAndComments, prolog.processingInstructions);
+			FMTSTREAM_VERIFY_CALL(readPIsSpacesAndComments, prolog.processingInstructions);
 
 			// Go through XML tree
 
 			std::streampos rootPos = getSourcePos();
 			xml::Element rootElement;
-			FMTSTREAM_VERIFY_SELF_CALL(readElement, rootElement);
-			FMTSTREAM_VERIFY_SELF_CALL(setSourcePos, rootElement.endOfElement);
+			FMTSTREAM_VERIFY_CALL(readElement, rootElement);
+			FMTSTREAM_VERIFY_CALL(setSourcePos, rootElement.endOfElement);
 
 			// Load PIs, spaces and comments after XML tree
 
@@ -135,7 +135,7 @@ namespace dsk
 
 			// Set the cursor position right before XML tree
 
-			FMTSTREAM_VERIFY_SELF_CALL(setSourcePos, rootPos);
+			FMTSTREAM_VERIFY_CALL(setSourcePos, rootPos);
 
 			return error;
 		}
@@ -154,8 +154,8 @@ namespace dsk
 		{
 			FMTSTREAM_BEGIN_WRITE();
 
-			FMTSTREAM_VERIFY_SELF_CALL(writeProlog, file.prolog);
-			FMTSTREAM_VERIFY_SELF_CALL(writeElementTree, file.rootTree);
+			FMTSTREAM_VERIFY_CALL(writeProlog, file.prolog);
+			FMTSTREAM_VERIFY_CALL(writeElementTree, file.rootTree);
 
 			return error;
 		}
@@ -166,17 +166,17 @@ namespace dsk
 
 			if (prolog.declaration.has_value())
 			{
-				FMTSTREAM_VERIFY_SELF_CALL(writeDeclaration, prolog.declaration.value());
+				FMTSTREAM_VERIFY_CALL(writeDeclaration, prolog.declaration.value());
 			}
 
 			if (prolog.doctype.has_value())
 			{
-				FMTSTREAM_VERIFY_SELF_CALL(writeDoctype, prolog.doctype.value());
+				FMTSTREAM_VERIFY_CALL(writeDoctype, prolog.doctype.value());
 			}
 
 			for (const xml::ProcessingInstruction& instruction : prolog.processingInstructions)
 			{
-				FMTSTREAM_VERIFY_SELF_CALL(writeProcessingInstruction, instruction);
+				FMTSTREAM_VERIFY_CALL(writeProcessingInstruction, instruction);
 			}
 
 			return error;
@@ -248,12 +248,12 @@ namespace dsk
 		{
 			FMTSTREAM_BEGIN_WRITE();
 
-			FMTSTREAM_VERIFY_SELF_CALL(writeElementData, elementTree.data);
+			FMTSTREAM_VERIFY_CALL(writeElementData, elementTree.data);
 			for (const xml::ElementTree& child : elementTree.childs)
 			{
-				FMTSTREAM_VERIFY_SELF_CALL(writeElementTree, child);
+				FMTSTREAM_VERIFY_CALL(writeElementTree, child);
 			}
-			FMTSTREAM_VERIFY_SELF_CALL(writeAscend, 1);
+			FMTSTREAM_VERIFY_CALL(writeAscend, 1);
 
 			return error;
 		}
@@ -278,7 +278,7 @@ namespace dsk
 
 			for (const xml::ProcessingInstruction& instruction : elementData.processingInstructions)
 			{
-				FMTSTREAM_VERIFY_SELF_CALL(writeProcessingInstruction, instruction);
+				FMTSTREAM_VERIFY_CALL(writeProcessingInstruction, instruction);
 			}
 
 			FMTSTREAM_VERIFY(stream.write(elementData.content.data(), elementData.content.size()), InvalidStream, "XmlStream: Error while writing element content.");
@@ -398,22 +398,22 @@ namespace dsk
 
 			// Read tag
 
-			FMTSTREAM_VERIFY_SELF_CALL(readName, elementData.tag);
+			FMTSTREAM_VERIFY_CALL(readName, elementData.tag);
 			FMTSTREAM_VERIFY(!elementData.tag.empty(), XmlInvalidElement, "XmlStream: Expected element tag but could not read one.");
 
 			// Read attributes
 
-			FMTSTREAM_VERIFY_SELF_CALL(readSpaces, parsedSomething);
+			FMTSTREAM_VERIFY_CALL(readSpaces, parsedSomething);
 			while (parsedSomething)
 			{
 				std::string attributeName;
-				FMTSTREAM_VERIFY_SELF_CALL(readName, attributeName);
+				FMTSTREAM_VERIFY_CALL(readName, attributeName);
 				if (!attributeName.empty())
 				{
-					FMTSTREAM_VERIFY_SELF_CALL(readSpaces, parsedSomething);
+					FMTSTREAM_VERIFY_CALL(readSpaces, parsedSomething);
 					FMTSTREAM_VERIFY(stream.read(&x, 1), InvalidStream, "XmlStream: Error while reading '=' after attribute name in element.");
 					FMTSTREAM_VERIFY(x == '=', XmlInvalidElement, "XmlStream: '=' not found attribute name in element.");
-					FMTSTREAM_VERIFY_SELF_CALL(readSpaces, parsedSomething);
+					FMTSTREAM_VERIFY_CALL(readSpaces, parsedSomething);
 
 					char opening;
 					FMTSTREAM_VERIFY(stream.read(&opening, 1), InvalidStream, "XmlStream: Error while reading attribute value opening in element.");
@@ -431,7 +431,7 @@ namespace dsk
 					elementData.attributes[attributeName] = attributeValue;
 				}
 
-				FMTSTREAM_VERIFY_SELF_CALL(readSpaces, parsedSomething);
+				FMTSTREAM_VERIFY_CALL(readSpaces, parsedSomething);
 			}
 
 			// Read '>' or '/>'
@@ -462,12 +462,12 @@ namespace dsk
 			// Read tag
 
 			std::string tagFound;
-			FMTSTREAM_VERIFY_SELF_CALL(readName, tagFound);
+			FMTSTREAM_VERIFY_CALL(readName, tagFound);
 			FMTSTREAM_VERIFY(tagFound == tag, XmlInvalidElement, "XmlStream: Expected '</" + tag + "' but instead found '</" + tagFound + "'.");
 
 			// Read '>'
 
-			FMTSTREAM_VERIFY_SELF_CALL(readSpaces, parsedSomething);
+			FMTSTREAM_VERIFY_CALL(readSpaces, parsedSomething);
 			FMTSTREAM_VERIFY(stream.read(buffer, 1), InvalidStream, "XmlStream: Error while reading '>' at end of element.");
 			FMTSTREAM_VERIFY(buffer[0] == '>', XmlInvalidElement, "XmlStream: Expected '>' at end of element but instead got '" + std::string(buffer, 1) + "'.");
 
@@ -495,17 +495,17 @@ namespace dsk
 				return error;
 			}
 
-			FMTSTREAM_VERIFY_SELF_CALL(readSpaces, parsedSpace);
+			FMTSTREAM_VERIFY_CALL(readSpaces, parsedSpace);
 
 			// Read version
 
 			FMTSTREAM_VERIFY(stream.read(buffer, 7), InvalidStream, "XmlStream: Error while reading 'version' in XML declaration.");
 			FMTSTREAM_VERIFY(std::equal(buffer, buffer + 7, "version"), XmlInvalidDeclaration, "XmlStream: Expected 'version' in XML declaration but instead got '" + std::string(buffer, 7) + "'.");
 
-			FMTSTREAM_VERIFY_SELF_CALL(readSpaces, parsedSpace);
+			FMTSTREAM_VERIFY_CALL(readSpaces, parsedSpace);
 			FMTSTREAM_VERIFY(stream.read(buffer, 1), InvalidStream, "XmlStream: Error while reading '=' after 'version' in XML declaration.");
 			FMTSTREAM_VERIFY(buffer[0] == '=', XmlInvalidDeclaration, "XmlStream: '=' not found after 'version' in XML declaration.");
-			FMTSTREAM_VERIFY_SELF_CALL(readSpaces, parsedSpace);
+			FMTSTREAM_VERIFY_CALL(readSpaces, parsedSpace);
 
 			FMTSTREAM_VERIFY(stream.read(buffer, 3), InvalidStream, "XmlStream: Error while reading begining of version in XML declaration.");
 			FMTSTREAM_VERIFY(buffer[0] == '\'' || buffer[0] == '"', XmlInvalidDeclaration, "XmlStream: Error while reading version in XML declaration. Expected ''' or '\"' but instead got '" + std::string(buffer, 1) + "'.");
@@ -527,7 +527,7 @@ namespace dsk
 
 			declaration.encoding.reset();
 
-			FMTSTREAM_VERIFY_SELF_CALL(readSpaces, parsedSpace);
+			FMTSTREAM_VERIFY_CALL(readSpaces, parsedSpace);
 			if (parsedSpace)
 			{
 				FMTSTREAM_VERIFY(stream.read(buffer, 1), InvalidStream, "XmlStream: Error while extracting character for encoding presence in XML declaration.");
@@ -536,10 +536,10 @@ namespace dsk
 					FMTSTREAM_VERIFY(stream.read(buffer + 1, 7), InvalidStream, "XmlStream: Error while reading 'encoding' in XML declaration.");
 					FMTSTREAM_VERIFY(std::equal(buffer, buffer + 8, "encoding"), XmlInvalidDeclaration, "XmlStream: 'encoding' could not completely be read. Instead, got '" + std::string(buffer, 8) + "'.");
 
-					FMTSTREAM_VERIFY_SELF_CALL(readSpaces, parsedSpace);
+					FMTSTREAM_VERIFY_CALL(readSpaces, parsedSpace);
 					FMTSTREAM_VERIFY(stream.read(buffer, 1), InvalidStream, "XmlStream: Error while reading '=' after 'encoding' in XML declaration.");
 					FMTSTREAM_VERIFY(buffer[0] == '=', XmlInvalidDeclaration, "XmlStream: '=' not found after 'encoding' in XML declaration.");
-					FMTSTREAM_VERIFY_SELF_CALL(readSpaces, parsedSpace);
+					FMTSTREAM_VERIFY_CALL(readSpaces, parsedSpace);
 
 					FMTSTREAM_VERIFY(stream.read(buffer, 1), InvalidStream, "XmlStream: Error while reading ''' or '\"' after 'encoding = ' in XML declaration.");
 					FMTSTREAM_VERIFY(buffer[0] == '\'' || buffer[0] == '"', XmlInvalidDeclaration, "XmlStream: ''' or '\"' not found after 'encoding = '. Instead, found '" + std::string(buffer, 1) + "'.");
@@ -566,7 +566,7 @@ namespace dsk
 
 			declaration.standalone.reset();
 
-			FMTSTREAM_VERIFY_SELF_CALL(readSpaces, parsedSpace);
+			FMTSTREAM_VERIFY_CALL(readSpaces, parsedSpace);
 			if (parsedSpace)
 			{
 				FMTSTREAM_VERIFY(stream.read(buffer, 1), InvalidStream, "XmlStream: Error while extracting character for standalone presence in XML declaration.");
@@ -575,10 +575,10 @@ namespace dsk
 					FMTSTREAM_VERIFY(stream.read(buffer + 1, 10), InvalidStream, "XmlStream: Error while reading 'standalone' in XML declaration.");
 					FMTSTREAM_VERIFY(std::equal(buffer, buffer + 10, "standalone"), XmlInvalidDeclaration, "XmlStream: 'standalone' could not completely be read. Instead, got '" + std::string(buffer, 10) + "'.");
 
-					FMTSTREAM_VERIFY_SELF_CALL(readSpaces, parsedSpace);
+					FMTSTREAM_VERIFY_CALL(readSpaces, parsedSpace);
 					FMTSTREAM_VERIFY(stream.read(buffer, 1), InvalidStream, "XmlStream: Error while reading '=' after 'standalone' in XML declaration.");
 					FMTSTREAM_VERIFY(buffer[0] == '=', XmlInvalidDeclaration, "XmlStream: '=' not found after 'standalone' in XML declaration.");
-					FMTSTREAM_VERIFY_SELF_CALL(readSpaces, parsedSpace);
+					FMTSTREAM_VERIFY_CALL(readSpaces, parsedSpace);
 
 					FMTSTREAM_VERIFY(stream.read(buffer, 4), InvalidStream, "XmlStream: Error while reading standalone in XML declaration.");
 					if (buffer[1] == 'y')
@@ -601,7 +601,7 @@ namespace dsk
 
 			// Read '?>'
 
-			FMTSTREAM_VERIFY_SELF_CALL(readSpaces, parsedSpace);
+			FMTSTREAM_VERIFY_CALL(readSpaces, parsedSpace);
 			FMTSTREAM_VERIFY(stream.read(buffer, 2), InvalidStream, "XmlStream: Error while reading '?>' in XML declaration.");
 			FMTSTREAM_VERIFY(buffer[0] == '?' && buffer[1] == '>', XmlInvalidDeclaration, "XmlStream: Expected '?>' in XML declaration but instead got '" + std::string(buffer, 2) + "'.");
 
@@ -635,14 +635,14 @@ namespace dsk
 
 			// Read name
 
-			FMTSTREAM_VERIFY_SELF_CALL(readSpaces, parsedSpace);
+			FMTSTREAM_VERIFY_CALL(readSpaces, parsedSpace);
 			FMTSTREAM_VERIFY(parsedSpace, XmlInvalidDoctype, "XmlStream: Expected space after '<!DOCTYPE' but found no space.");
-			FMTSTREAM_VERIFY_SELF_CALL(readName, doctype.name);
+			FMTSTREAM_VERIFY_CALL(readName, doctype.name);
 			FMTSTREAM_VERIFY(!doctype.name.empty(), XmlInvalidDoctype, "XmlStream: Error while parsing doctype name.");
 
 			// Read '>'
 
-			FMTSTREAM_VERIFY_SELF_CALL(readSpaces, parsedSpace);
+			FMTSTREAM_VERIFY_CALL(readSpaces, parsedSpace);
 			FMTSTREAM_VERIFY(stream.read(buffer, 1), InvalidStream, "XmlStream: Error while reading '>' in doctype.");
 			FMTSTREAM_VERIFY(buffer[0] == '>', XmlInvalidDoctype, "XmlStream: Expected '>' to end doctype but instead found '" + std::string(buffer, 1) + "'.");
 
@@ -669,7 +669,7 @@ namespace dsk
 
 			// Read target
 
-			FMTSTREAM_VERIFY_SELF_CALL(readName, instruction.target);
+			FMTSTREAM_VERIFY_CALL(readName, instruction.target);
 			FMTSTREAM_VERIFY(!instruction.target.empty(), XmlInvalidProcessingInstruction, "XmlStream: Error while parsing processing instruction target.");
 			bool targetStartNotXML = instruction.target.size() != 3
 				|| std::toupper(instruction.target[0]) != 'X'
@@ -680,7 +680,7 @@ namespace dsk
 			// Read instruction and '?>'
 
 			instruction.instruction.clear();
-			FMTSTREAM_VERIFY_SELF_CALL(readSpaces, parsedSpace);
+			FMTSTREAM_VERIFY_CALL(readSpaces, parsedSpace);
 			if (parsedSpace)
 			{
 				FMTSTREAM_VERIFY(stream.read(buffer, 2), InvalidStream, "XmlStream: Error while reading PI instruction.");
@@ -703,21 +703,21 @@ namespace dsk
 			xml::ProcessingInstruction instruction;
 
 			do {
-				FMTSTREAM_VERIFY_SELF_CALL(readSpaces, parsedSpaces);
-				FMTSTREAM_VERIFY_SELF_CALL(readComment, parsedComment);
+				FMTSTREAM_VERIFY_CALL(readSpaces, parsedSpaces);
+				FMTSTREAM_VERIFY_CALL(readComment, parsedComment);
 			} while (parsedSpaces || parsedComment);
 
-			FMTSTREAM_VERIFY_SELF_CALL(readProcessingInstruction, instruction, parsedPI);
+			FMTSTREAM_VERIFY_CALL(readProcessingInstruction, instruction, parsedPI);
 			while (parsedPI)
 			{
 				instructions.push_back(instruction);
 
 				do {
-					FMTSTREAM_VERIFY_SELF_CALL(readSpaces, parsedSpaces);
-					FMTSTREAM_VERIFY_SELF_CALL(readComment, parsedComment);
+					FMTSTREAM_VERIFY_CALL(readSpaces, parsedSpaces);
+					FMTSTREAM_VERIFY_CALL(readComment, parsedComment);
 				} while (parsedSpaces || parsedComment);
 
-				FMTSTREAM_VERIFY_SELF_CALL(readProcessingInstruction, instruction, parsedPI);
+				FMTSTREAM_VERIFY_CALL(readProcessingInstruction, instruction, parsedPI);
 			}
 
 			return error;
@@ -754,7 +754,7 @@ namespace dsk
 			// Read STag
 
 			bool emptyElement;
-			FMTSTREAM_VERIFY_SELF_CALL(readSTag, *elementData, emptyElement);
+			FMTSTREAM_VERIFY_CALL(readSTag, *elementData, emptyElement);
 			if (emptyElement)
 			{
 				return error;
@@ -773,11 +773,11 @@ namespace dsk
 					if (buffer[1] == '?')
 					{
 						elementData->processingInstructions.emplace_back();
-						FMTSTREAM_VERIFY_SELF_CALL(readProcessingInstruction, elementData->processingInstructions.back(), parsedSomething);
+						FMTSTREAM_VERIFY_CALL(readProcessingInstruction, elementData->processingInstructions.back(), parsedSomething);
 					}
 					else if (buffer[1] == '!')
 					{
-						FMTSTREAM_VERIFY_SELF_CALL(readComment, parsedSomething);
+						FMTSTREAM_VERIFY_CALL(readComment, parsedSomething);
 						FMTSTREAM_VERIFY(parsedSomething, XmlInvalidElement, "XmlStream: Expected comment but could not parse one in element.");
 						// TODO: if (!parsedSomehting) readCDSect();
 					}
@@ -786,7 +786,7 @@ namespace dsk
 						if (tree)
 						{
 							elementTree->childs.emplace_back();
-							FMTSTREAM_VERIFY_SELF_CALL(readRawElement, &elementTree->childs.back(), true);
+							FMTSTREAM_VERIFY_CALL(readRawElement, &elementTree->childs.back(), true);
 						}
 						else
 						{
@@ -794,7 +794,7 @@ namespace dsk
 
 							// TODO: Read element without parsing tree
 							xml::Element elt;
-							FMTSTREAM_VERIFY_SELF_CALL(readRawElement, &elt, false);
+							FMTSTREAM_VERIFY_CALL(readRawElement, &elt, false);
 						}
 					}
 
@@ -812,7 +812,7 @@ namespace dsk
 
 			// Read ETag
 
-			FMTSTREAM_VERIFY_SELF_CALL(readETag, elementData->tag);
+			FMTSTREAM_VERIFY_CALL(readETag, elementData->tag);
 			if (tree)
 			{
 				elementTree->endOfElement = getSourcePos();

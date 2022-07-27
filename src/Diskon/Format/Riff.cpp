@@ -9,7 +9,7 @@ namespace dsk
 			FMTSTREAM_BEGIN_READ();
 
 			riff::FileHeader fileHeader;
-			FMTSTREAM_VERIFY_SELF_CALL(readFileHeader, fileHeader);
+			FMTSTREAM_VERIFY_CALL(readFileHeader, fileHeader);
 
 			std::copy_n(fileHeader.formType, 4, file.formType);
 			file.chunks.clear();
@@ -22,7 +22,7 @@ namespace dsk
 				FMTSTREAM_VERIFY(fileHeader.size >= 8, RiffInvalidFileSize, "RiffStream: Error while reading chunk. Expected remaining file size to be more than 8, got " + std::to_string(fileHeader.size));
 				fileHeader.size -= 8;
 
-				FMTSTREAM_VERIFY_SELF_CALL(readChunk, chunk);
+				FMTSTREAM_VERIFY_CALL(readChunk, chunk);
 
 				FMTSTREAM_VERIFY(fileHeader.size >= chunk.data.size(), RiffInvalidFileSize, "RiffStream: Error while reading chunk. Expected remaining file size to be more than chunk size (" + std::to_string(chunk.data.size()) + "), got " + std::to_string(fileHeader.size));
 				fileHeader.size -= chunk.data.size();
@@ -54,17 +54,17 @@ namespace dsk
 			FMTSTREAM_BEGIN_READ();
 
 			riff::ChunkHeader chunkHeader;
-			FMTSTREAM_VERIFY_SELF_CALL(readChunkHeader, chunkHeader);
+			FMTSTREAM_VERIFY_CALL(readChunkHeader, chunkHeader);
 
 			std::copy_n(chunkHeader.id, 4, chunk.id);
 			chunk.data.resize(chunkHeader.size);
 
-			FMTSTREAM_VERIFY_SELF_CALL(readChunkData, chunk.data.data(), chunkHeader.size);
+			FMTSTREAM_VERIFY_CALL(readChunkData, chunk.data.data(), chunkHeader.size);
 
 			if (chunkHeader.size % 2)
 			{
 				uint8_t padByte;
-				FMTSTREAM_VERIFY_SELF_CALL(readChunkData, &padByte, 1);
+				FMTSTREAM_VERIFY_CALL(readChunkData, &padByte, 1);
 
 				FMTSTREAM_VERIFY(padByte == 0, RiffInvalidPadByte, "RiffStream: Bad pad byte value. Expected 0, got " + std::to_string(padByte));
 			}
@@ -102,11 +102,11 @@ namespace dsk
 			{
 				fileHeader.size += 8 + chunk.data.size();
 			}
-			FMTSTREAM_VERIFY_SELF_CALL(writeFileHeader, fileHeader);
+			FMTSTREAM_VERIFY_CALL(writeFileHeader, fileHeader);
 
 			for (const riff::Chunk& chunk : file.chunks)
 			{
-				FMTSTREAM_VERIFY_SELF_CALL(writeChunk, chunk);
+				FMTSTREAM_VERIFY_CALL(writeChunk, chunk);
 			}
 
 			return error;
@@ -132,13 +132,13 @@ namespace dsk
 			riff::ChunkHeader chunkHeader;
 			std::copy_n(chunk.id, 4, chunkHeader.id);
 			chunkHeader.size = chunk.data.size();
-			FMTSTREAM_VERIFY_SELF_CALL(writeChunkHeader, chunkHeader);
+			FMTSTREAM_VERIFY_CALL(writeChunkHeader, chunkHeader);
 
-			FMTSTREAM_VERIFY_SELF_CALL(writeChunkData, chunk.data.data(), chunk.data.size());
+			FMTSTREAM_VERIFY_CALL(writeChunkData, chunk.data.data(), chunk.data.size());
 			if (chunkHeader.size % 2)
 			{
 				uint8_t padByte = 0;
-				FMTSTREAM_VERIFY_SELF_CALL(writeChunkData, &padByte, 1);
+				FMTSTREAM_VERIFY_CALL(writeChunkData, &padByte, 1);
 			}
 
 			return error;

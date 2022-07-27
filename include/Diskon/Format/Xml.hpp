@@ -41,14 +41,14 @@ namespace dsk
 			{
 				ElementData data;
 				std::vector<std::streampos> childs;
-				std::streampos endOfElement;
+				std::streampos endOfElement;	// TODO: Find a way to remove this
 			};
 
 			struct ElementTree
 			{
 				ElementData data;
 				std::vector<ElementTree> childs;
-				std::streampos endOfElement;
+				std::streampos endOfElement;	// TODO: Find a way to remove this
 			};
 
 			struct Prolog
@@ -76,8 +76,6 @@ namespace dsk
 				XmlStream& operator=(const XmlStream& stream) = default;
 				XmlStream& operator=(XmlStream&& stream) = default;
 
-				~XmlStream() = default;
-
 				const FormatError& readFile(xml::File& file);
 				const FormatError& readProlog(xml::Prolog& prolog);
 				const FormatError& readElementTree(xml::ElementTree& elementTree);	//! Reads the whole tree, place the cursor on the next start of element (after element tree)
@@ -91,6 +89,8 @@ namespace dsk
 				const FormatError& writeElementTree(const xml::ElementTree& elementTree);	//! Cursor right after tree
 				const FormatError& writeElementData(const xml::ElementData& elementData);	//! Cursor after content (and PIs, etc...)
 				const FormatError& writeAscend(uint32_t count);
+
+				~XmlStream() = default;
 
 			private:
 

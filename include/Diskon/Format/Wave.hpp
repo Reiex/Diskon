@@ -71,6 +71,8 @@ namespace dsk
 
 		class WaveStream : public FormatStream
 		{
+			// TODO: Handle endianness
+
 			public:
 
 				WaveStream() = default;

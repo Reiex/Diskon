@@ -35,6 +35,12 @@ namespace dsk
 			struct File;
 		}
 		class XmlStream;
+
+		namespace png
+		{
+
+		}
+		class PngStream;
 	}
 }
 
@@ -50,7 +56,7 @@ do {														\
 } while (0)
 
 
-#define FMTSTREAM_VERIFY_SELF_CALL(call, ...)	\
+#define FMTSTREAM_VERIFY_CALL(call, ...)	\
 do {											\
 	if (!call(__VA_ARGS__))						\
 	{											\
@@ -59,7 +65,7 @@ do {											\
 } while (0)
 
 
-#define FMTSTREAM_VERIFY_CALL(stream, call, ...)	\
+#define FMTSTREAM_VERIFY_STREAM_CALL(stream, call, ...)	\
 do {												\
 	if (!(stream).call(__VA_ARGS__))				\
 	{												\
