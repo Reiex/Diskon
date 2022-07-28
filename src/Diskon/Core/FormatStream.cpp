@@ -20,12 +20,13 @@ namespace dsk
 	}
 
 
-	FormatStream::FormatStream() :
+	FormatStream::FormatStream(std::endian endianness) :
+		_error(),
+		_endianness(endianness),
 		_srcStream(nullptr),
 		_srcStreamOwned(true),
 		_dstStream(nullptr),
-		_dstStreamOwned(true),
-		_error()
+		_dstStreamOwned(true)
 	{
 	}
 

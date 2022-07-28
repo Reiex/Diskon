@@ -78,6 +78,9 @@
     <ClInclude Include="..\..\include\Diskon\Format\Png.hpp">
       <Filter>Header Files\Format</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\Diskon\Core\templates\FormatStream.hpp">
+      <Filter>Header Files\Core\templates</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\Diskon\Format\Wave.cpp">

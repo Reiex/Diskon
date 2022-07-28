@@ -4,6 +4,10 @@ namespace dsk
 {
 	namespace fmt
 	{
+		RiffStream::RiffStream() : FormatStream(std::endian::little)
+		{
+		}
+
 		const FormatError& RiffStream::readFile(riff::File& file)
 		{
 			FMTSTREAM_BEGIN_READ();
@@ -38,13 +42,13 @@ namespace dsk
 			FMTSTREAM_BEGIN_READ();
 
 			char riffId[4];
-			FMTSTREAM_VERIFY(stream.read(riffId, 4), InvalidStream, "RiffStream: Error while reading 'RIFF' identifier.");
+			FMTSTREAM_VERIFY_CALL(streamRead, riffId, 4);
 			FMTSTREAM_VERIFY(std::equal(riffId, riffId + 4, "RIFF"), RiffIdentifierNotFound, "RiffStream: 'RIFF' identifier not found.");
 
-			FMTSTREAM_VERIFY(stream.read((char*) &fileHeader.size, 4), InvalidStream, "RiffStream: Error while reading file size.");
+			FMTSTREAM_VERIFY_CALL(streamRead, fileHeader.size);
 			FMTSTREAM_VERIFY(fileHeader.size >= 4, RiffInvalidFileSize, "RiffStream: Invalid file size. Expected more than 4, got " + std::to_string(fileHeader.size));
 
-			FMTSTREAM_VERIFY(stream.read(fileHeader.formType, 4), InvalidStream, "RiffStream: Error while reading form-type.");
+			FMTSTREAM_VERIFY_CALL(streamRead, fileHeader.formType, 4);
 
 			return error;
 		}
@@ -76,8 +80,8 @@ namespace dsk
 		{
 			FMTSTREAM_BEGIN_READ();
 
-			FMTSTREAM_VERIFY(stream.read(chunkHeader.id, 4) , InvalidStream, "RiffStream: Error while reading chunk ID.");
-			FMTSTREAM_VERIFY(stream.read((char*) &chunkHeader.size, 4), InvalidStream, "RiffStream: Error while reading chunk size.");
+			FMTSTREAM_VERIFY_CALL(streamRead, chunkHeader.id, 4);
+			FMTSTREAM_VERIFY_CALL(streamRead, chunkHeader.size);
 
 			return error;
 		}
@@ -86,7 +90,7 @@ namespace dsk
 		{
 			FMTSTREAM_BEGIN_READ();
 
-			FMTSTREAM_VERIFY(stream.read((char*) data, size), InvalidStream, "RiffStream: Error while reading chunk data.");
+			FMTSTREAM_VERIFY_CALL(streamRead, data, size);
 
 			return error;
 		}
@@ -118,9 +122,9 @@ namespace dsk
 
 			FMTSTREAM_BEGIN_WRITE();
 
-			FMTSTREAM_VERIFY(stream.write("RIFF", 4), InvalidStream, "RiffStream: Error while writing 'RIFF'.");
-			FMTSTREAM_VERIFY(stream.write((const char*) &fileHeader.size, 4), InvalidStream, "RiffStream: Error while writing RIFF file size.");
-			FMTSTREAM_VERIFY(stream.write(fileHeader.formType, 4), InvalidStream, "RiffStream: Error while writing RIFF form-type.");
+			FMTSTREAM_VERIFY_CALL(streamWrite, "RIFF", 4);
+			FMTSTREAM_VERIFY_CALL(streamWrite, fileHeader.size);
+			FMTSTREAM_VERIFY_CALL(streamWrite, fileHeader.formType, 4);
 
 			return error;
 		}
@@ -148,8 +152,8 @@ namespace dsk
 		{
 			FMTSTREAM_BEGIN_WRITE();
 
-			FMTSTREAM_VERIFY(stream.write(chunkHeader.id, 4), InvalidStream, "RiffStream: Error while writing chunk id.");
-			FMTSTREAM_VERIFY(stream.write((const char*) &chunkHeader.size, 4), InvalidStream, "RiffStream: Error while writing chunk size.");
+			FMTSTREAM_VERIFY_CALL(streamWrite, chunkHeader.id, 4);
+			FMTSTREAM_VERIFY_CALL(streamWrite, chunkHeader.size);
 
 			return error;
 		}
@@ -158,7 +162,7 @@ namespace dsk
 		{
 			FMTSTREAM_BEGIN_WRITE();
 
-			FMTSTREAM_VERIFY(stream.write((const char*) data, size), InvalidStream, "RiffStream: Error while writing chunk data.");
+			FMTSTREAM_VERIFY_CALL(streamWrite, data, size);
 
 			return error;
 		}

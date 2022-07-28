@@ -354,7 +354,9 @@ namespace dsk
 			}
 		}
 
-
+		PngStream::PngStream() : FormatStream(std::endian::big)
+		{
+		}
 
 		const FormatError& PngStream::readFile(png::File& file)
 		{

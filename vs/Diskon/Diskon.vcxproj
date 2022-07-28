@@ -24,6 +24,7 @@
     <ClInclude Include="..\..\include\Diskon\Core\Core.hpp" />
     <ClInclude Include="..\..\include\Diskon\Core\FormatStream.hpp" />
     <ClInclude Include="..\..\include\Diskon\Core\templates\Float.hpp" />
+    <ClInclude Include="..\..\include\Diskon\Core\templates\FormatStream.hpp" />
     <ClInclude Include="..\..\include\Diskon\Core\templates\Int.hpp" />
     <ClInclude Include="..\..\include\Diskon\Core\types.hpp" />
     <ClInclude Include="..\..\include\Diskon\Diskon.hpp" />
@@ -148,7 +149,7 @@
       <PrecompiledHeaderFile>
       </PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>$(SolutionDir)include\</AdditionalIncludeDirectories>
-      <LanguageStandard>stdcpp20</LanguageStandard>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -168,7 +169,7 @@
       <PrecompiledHeaderFile>
       </PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>$(SolutionDir)include\</AdditionalIncludeDirectories>
-      <LanguageStandard>stdcpp20</LanguageStandard>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -188,7 +189,7 @@
       <PrecompiledHeaderFile>
       </PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>$(SolutionDir)include\</AdditionalIncludeDirectories>
-      <LanguageStandard>stdcpp20</LanguageStandard>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>

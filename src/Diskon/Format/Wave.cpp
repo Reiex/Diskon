@@ -119,6 +119,9 @@ namespace dsk
 			}
 		}
 
+		WaveStream::WaveStream() : FormatStream(std::endian::native)
+		{
+		}
 
 		const FormatError& WaveStream::readFile(wave::File& file)
 		{
@@ -127,7 +130,7 @@ namespace dsk
 			FMTSTREAM_VERIFY_CALL(readHeader, file.header);
 
 			file.rawSamples.resize(file.header.blockAlign * file.header.blockCount);
-			FMTSTREAM_VERIFY(stream.read((char*) file.rawSamples.data(), file.rawSamples.size()), InvalidStream, "WaveStream: Error while reading samples.");
+			FMTSTREAM_VERIFY_CALL(streamRead, file.rawSamples.data(), file.rawSamples.size());
 
 			return error;
 		}
@@ -263,7 +266,7 @@ namespace dsk
 			FMTSTREAM_BEGIN_WRITE();
 
 			FMTSTREAM_VERIFY_CALL(writeHeader, file.header);
-			FMTSTREAM_VERIFY(stream.write((char*) file.rawSamples.data(), file.rawSamples.size()), InvalidStream, "WaveStream: Error while writing samples.");
+			FMTSTREAM_VERIFY_CALL(streamWrite, file.rawSamples.data(), file.rawSamples.size());
 
 			return error;
 		}

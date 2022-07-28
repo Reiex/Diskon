@@ -75,7 +75,7 @@ namespace dsk
 
 			public:
 
-				WaveStream() = default;
+				WaveStream();
 				WaveStream(const WaveStream& stream) = default;
 				WaveStream(WaveStream&& stream) = default;
 

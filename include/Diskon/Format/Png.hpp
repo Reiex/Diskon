@@ -67,7 +67,7 @@ namespace dsk
 		{
 			public:
 
-				PngStream() = default;
+				PngStream();
 				PngStream(const PngStream& stream) = default;
 				PngStream(PngStream&& stream) = default;
 

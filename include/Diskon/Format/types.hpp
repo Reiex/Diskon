@@ -57,21 +57,21 @@ do {														\
 
 
 #define FMTSTREAM_VERIFY_CALL(call, ...)	\
-do {											\
-	if (!call(__VA_ARGS__))						\
-	{											\
-		return error;							\
-	}											\
+do {										\
+	if (!call(__VA_ARGS__))					\
+	{										\
+		return error;						\
+	}										\
 } while (0)
 
 
 #define FMTSTREAM_VERIFY_STREAM_CALL(stream, call, ...)	\
-do {												\
-	if (!(stream).call(__VA_ARGS__))				\
-	{												\
-		error = (stream).getLastError();			\
-		return error;								\
-	}												\
+do {													\
+	if (!(stream).call(__VA_ARGS__))					\
+	{													\
+		error = (stream).getLastError();				\
+		return error;									\
+	}													\
 } while (0)
 
 

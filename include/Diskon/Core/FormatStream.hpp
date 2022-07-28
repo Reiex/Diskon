@@ -17,7 +17,7 @@ namespace dsk
 
 		void clear();
 
-		virtual ~FormatError() = default;
+		~FormatError() = default;
 
 		enum class ErrorCode
 		{
@@ -65,10 +65,6 @@ namespace dsk
 		std::string errorMessage;
 	};
 
-	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	//! - The position of the cursor on source and destination is the same before and after the call of any read/write
-	//! function (but obvisouly move during the call)
-	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	class FormatStream
 	{
 		public:
@@ -99,20 +95,24 @@ namespace dsk
 
 		protected:
 
-			FormatStream();
+			FormatStream(std::endian endianness);
 
-			// template<typename T>
-			// const FormatError& streamRead(T& value);
-			// template<typename T>
-			// const FormatError& streamWrite(const T& value);
+			template<typename TValue> const FormatError& streamRead(TValue& value);
+			template<typename TValue> const FormatError& streamRead(TValue* values, uint64_t count);
+			template<typename TValue> const FormatError& streamWrite(TValue value);
+			template<typename TValue> const FormatError& streamWrite(const TValue* values, uint64_t count);
 
 			FormatError _error;
-
-		// private:
+			std::endian _endianness;
 
 			std::istream* _srcStream;
-			bool _srcStreamOwned;
 			std::ostream* _dstStream;
+
+		private:
+
+			bool _srcStreamOwned;
 			bool _dstStreamOwned;
 	};
 }
+
+#include <Diskon/Core/templates/FormatStream.hpp>

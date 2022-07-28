@@ -35,11 +35,9 @@ namespace dsk
 
 		class RiffStream : public FormatStream
 		{
-			// TODO: Handle endianness
-
 			public:
 
-				RiffStream() = default;
+				RiffStream();
 				RiffStream(const RiffStream& stream) = default;
 				RiffStream(RiffStream&& stream) = default;
 

@@ -69,7 +69,7 @@ namespace dsk
 		{
 			public:
 
-				XmlStream() = default;
+				XmlStream();
 				XmlStream(const XmlStream& stream) = default;
 				XmlStream(XmlStream&& stream) = default;
 
