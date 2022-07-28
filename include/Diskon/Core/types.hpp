@@ -25,7 +25,4 @@ namespace dsk
 	template<uint8_t BitSize> class UnsignedInt;
 	template<uint8_t ExpSize, uint8_t MantissaSize> class Float;
 	using Half = Float<5, 10>;
-
-	struct FormatError;
-	class FormatStream;
 }

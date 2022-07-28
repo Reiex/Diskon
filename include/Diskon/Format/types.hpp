@@ -6,6 +6,9 @@ namespace dsk
 {
 	namespace fmt
 	{
+		struct FormatError;
+		class FormatStream;
+
 		namespace riff
 		{
 			struct ChunkHeader;

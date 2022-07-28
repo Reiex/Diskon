@@ -22,13 +22,13 @@
     <ClInclude Include="..\..\include\Diskon\Core\Float.hpp" />
     <ClInclude Include="..\..\include\Diskon\Core\Int.hpp" />
     <ClInclude Include="..\..\include\Diskon\Core\Core.hpp" />
-    <ClInclude Include="..\..\include\Diskon\Core\FormatStream.hpp" />
     <ClInclude Include="..\..\include\Diskon\Core\templates\Float.hpp" />
-    <ClInclude Include="..\..\include\Diskon\Core\templates\FormatStream.hpp" />
     <ClInclude Include="..\..\include\Diskon\Core\templates\Int.hpp" />
     <ClInclude Include="..\..\include\Diskon\Core\types.hpp" />
     <ClInclude Include="..\..\include\Diskon\Diskon.hpp" />
     <ClInclude Include="..\..\include\Diskon\Format\Format.hpp" />
+    <ClInclude Include="..\..\include\Diskon\Format\FormatStream.hpp" />
+    <ClInclude Include="..\..\include\Diskon\Format\templates\FormatStream.hpp" />
     <ClInclude Include="..\..\include\Diskon\Format\Png.hpp" />
     <ClInclude Include="..\..\include\Diskon\Format\Riff.hpp" />
     <ClInclude Include="..\..\include\Diskon\Format\templates\Wave.hpp" />
@@ -39,7 +39,7 @@
   <ItemGroup>
     <ClCompile Include="..\..\src\Diskon\Format\Png.cpp" />
     <ClCompile Include="..\..\src\Diskon\Format\Riff.cpp" />
-    <ClCompile Include="..\..\src\Diskon\Core\FormatStream.cpp" />
+    <ClCompile Include="..\..\src\Diskon\Format\FormatStream.cpp" />
     <ClCompile Include="..\..\src\Diskon\Format\Wave.cpp" />
     <ClCompile Include="..\..\src\Diskon\Format\Xml.cpp" />
   </ItemGroup>

@@ -16,9 +16,6 @@
     <Filter Include="Header Files\Core">
       <UniqueIdentifier>{6d10f2a5-f886-4dca-936c-7e6448230e3f}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\Core">
-      <UniqueIdentifier>{42fa94a3-fe8b-4445-9c0d-c33de1288e57}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files\Format">
       <UniqueIdentifier>{aa2b47f3-0eeb-4f55-82d2-206dfa41c218}</UniqueIdentifier>
     </Filter>
@@ -60,8 +57,8 @@
     <ClInclude Include="..\..\include\Diskon\Format\Xml.hpp">
       <Filter>Header Files\Format</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\Diskon\Core\FormatStream.hpp">
-      <Filter>Header Files\Core</Filter>
+    <ClInclude Include="..\..\include\Diskon\Format\FormatStream.hpp">
+      <Filter>Header Files\Format</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\Diskon\Core\Int.hpp">
       <Filter>Header Files\Core</Filter>
@@ -78,8 +75,8 @@
     <ClInclude Include="..\..\include\Diskon\Format\Png.hpp">
       <Filter>Header Files\Format</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\Diskon\Core\templates\FormatStream.hpp">
-      <Filter>Header Files\Core\templates</Filter>
+    <ClInclude Include="..\..\include\Diskon\Format\templates\FormatStream.hpp">
+      <Filter>Header Files\Format\templates</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -92,8 +89,8 @@
     <ClCompile Include="..\..\src\Diskon\Format\Xml.cpp">
       <Filter>Source Files\Format</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\Diskon\Core\FormatStream.cpp">
-      <Filter>Source Files\Core</Filter>
+    <ClCompile Include="..\..\src\Diskon\Format\FormatStream.cpp">
+      <Filter>Source Files\Format</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\Diskon\Format\Png.cpp">
       <Filter>Source Files\Format</Filter>
