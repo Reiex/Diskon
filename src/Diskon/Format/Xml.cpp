@@ -67,7 +67,7 @@ namespace dsk
 
 		const FormatError& XmlStream::readFile(xml::File& file)
 		{
-			FMTSTREAM_BEGIN_READ();
+			FMTSTREAM_BEGIN_READ_FUNC("XmlStream::readFile(xml::File& file)");
 
 			FMTSTREAM_VERIFY_CALL(readProlog, file.prolog);
 			FMTSTREAM_VERIFY_CALL(readElementTree, file.rootTree);
@@ -77,7 +77,7 @@ namespace dsk
 
 		const FormatError& XmlStream::readProlog(xml::Prolog& prolog)
 		{
-			FMTSTREAM_BEGIN_READ();
+			FMTSTREAM_BEGIN_READ_FUNC("XmlStream::readProlog(xml::Prolog& prolog)");
 
 			bool parsedSomething;
 
@@ -146,17 +146,25 @@ namespace dsk
 
 		const FormatError& XmlStream::readElementTree(xml::ElementTree& elementTree)
 		{
-			return readRawElement(&elementTree, true);
+			FMTSTREAM_BEGIN_READ_FUNC("XmlStream::readElementTree(xml::ElementTree& elementTree)");
+			
+			FMTSTREAM_VERIFY_CALL(readRawElement, &elementTree, true);
+
+			return error;
 		}
 
 		const FormatError& XmlStream::readElement(xml::Element& element)
 		{
-			return readRawElement(&element, false);
+			FMTSTREAM_BEGIN_READ_FUNC("XmlStream::readElement(xml::Element& element)");
+
+			FMTSTREAM_VERIFY_CALL(readRawElement, &element, false);
+
+			return error;
 		}
 
 		const FormatError& XmlStream::writeFile(const xml::File& file)
 		{
-			FMTSTREAM_BEGIN_WRITE();
+			FMTSTREAM_BEGIN_WRITE_FUNC("XmlStream::writeFile(const xml::File& file)");
 
 			FMTSTREAM_VERIFY_CALL(writeProlog, file.prolog);
 			FMTSTREAM_VERIFY_CALL(writeElementTree, file.rootTree);
@@ -166,7 +174,7 @@ namespace dsk
 
 		const FormatError& XmlStream::writeProlog(const xml::Prolog& prolog)
 		{
-			FMTSTREAM_BEGIN_WRITE();
+			FMTSTREAM_BEGIN_WRITE_FUNC("XmlStream::writeProlog(const xml::Prolog& prolog)");
 
 			if (prolog.declaration.has_value())
 			{
@@ -190,8 +198,8 @@ namespace dsk
 		{
 			assert(declaration.versionMajor == 1);
 			assert(!declaration.encoding.has_value() || isEncName(declaration.encoding.value()));
-			
-			FMTSTREAM_BEGIN_WRITE();
+
+			FMTSTREAM_BEGIN_WRITE_FUNC("XmlStream::writeDeclaration(const xml::Declaration& declaration)");
 
 			std::string str = "<?xml version='" + std::to_string(declaration.versionMajor) + "." + std::to_string(declaration.versionMinor) + "'";
 
@@ -214,7 +222,7 @@ namespace dsk
 
 			str += "?>";
 
-			FMTSTREAM_VERIFY_CALL(streamWrite, str.data(), str.size());
+			FMTSTREAM_WRITE(str.data(), str.size());
 
 			return error;
 		}
@@ -223,11 +231,11 @@ namespace dsk
 		{
 			assert(isName(doctype.name));
 
-			FMTSTREAM_BEGIN_WRITE();
+			FMTSTREAM_BEGIN_WRITE_FUNC("XmlStream::writeDoctype(const xml::DocType& doctype)");
 
 			std::string str = "<!DOCTYPE " + doctype.name + ">";
 
-			FMTSTREAM_VERIFY_CALL(streamWrite, str.data(), str.size());
+			FMTSTREAM_WRITE(str.data(), str.size());
 
 			return error;
 		}
@@ -240,18 +248,18 @@ namespace dsk
 				|| std::toupper(instruction.target[1]) != 'M'
 				|| std::toupper(instruction.target[2]) != 'L');
 
-			FMTSTREAM_BEGIN_WRITE();
+			FMTSTREAM_BEGIN_WRITE_FUNC("XmlStream::writeProcessingInstruction(const xml::ProcessingInstruction& instruction)");
 
 			std::string str = "<?" + instruction.target + " " + instruction.instruction + "?>";
 
-			FMTSTREAM_VERIFY_CALL(streamWrite, str.data(), str.size());
+			FMTSTREAM_WRITE(str.data(), str.size());
 
 			return error;
 		}
 
 		const FormatError& XmlStream::writeElementTree(const xml::ElementTree& elementTree)
 		{
-			FMTSTREAM_BEGIN_WRITE();
+			FMTSTREAM_BEGIN_WRITE_FUNC("XmlStream::writeElementTree(const xml::ElementTree& elementTree)");
 
 			FMTSTREAM_VERIFY_CALL(writeElementData, elementTree.data);
 			for (const xml::ElementTree& child : elementTree.childs)
@@ -269,7 +277,7 @@ namespace dsk
 			// TODO: Verify elementData.content
 			// TODO: Handle ''' and '"' in attribute values (and handle references generally, at lecture as well)
 
-			FMTSTREAM_BEGIN_WRITE();
+			FMTSTREAM_BEGIN_WRITE_FUNC("XmlStream::writeElementData(const xml::ElementData& elementData)");
 
 			std::string str = "<" + elementData.tag;
 			for (const std::pair<std::string, std::string>& attribute : elementData.attributes)
@@ -279,14 +287,14 @@ namespace dsk
 			}
 			str += ">";
 
-			FMTSTREAM_VERIFY_CALL(streamWrite, str.data(), str.size());
+			FMTSTREAM_WRITE(str.data(), str.size());
 
 			for (const xml::ProcessingInstruction& instruction : elementData.processingInstructions)
 			{
 				FMTSTREAM_VERIFY_CALL(writeProcessingInstruction, instruction);
 			}
 
-			FMTSTREAM_VERIFY_CALL(streamWrite, elementData.content.data(), elementData.content.size());
+			FMTSTREAM_WRITE(elementData.content.data(), elementData.content.size());
 			
 			_tagStack.push(elementData.tag);
 
@@ -297,12 +305,12 @@ namespace dsk
 		{
 			assert(_tagStack.size() >= count);
 
-			FMTSTREAM_BEGIN_WRITE();
+			FMTSTREAM_BEGIN_WRITE_FUNC("XmlStream::writeAscend(uint32_t count)");
 
 			for (uint32_t i = 0; i < count; ++i)
 			{
 				std::string str = "</" + _tagStack.top() + ">";
-				FMTSTREAM_VERIFY_CALL(streamWrite, str.data(), str.size());
+				FMTSTREAM_WRITE(str.data(), str.size());
 				_tagStack.pop();
 			}
 
@@ -311,100 +319,100 @@ namespace dsk
 
 		const FormatError& XmlStream::readSpaces(bool& parsedSomething)
 		{
-			FMTSTREAM_BEGIN_READ();
+			FMTSTREAM_READ_FUNC("XmlStream::readSpaces(bool& parsedSomething)");
 
 			char x;
 
-			FMTSTREAM_VERIFY_CALL(streamRead, x);
+			FMTSTREAM_READ(x);
 			parsedSomething = (x == 0x20 || x == 0x09 || x == 0x0D || x == 0x0A);
 
 			while (x == 0x20 || x == 0x09 || x == 0x0D || x == 0x0A)
 			{
-				FMTSTREAM_VERIFY_CALL(streamRead, x);
+				FMTSTREAM_READ(x);
 			}
 
-			FMTSTREAM_VERIFY(stream.putback(x), InvalidStream, "XmlStream::readSpaces: Error while putting back a character.");
+			FMTSTREAM_VERIFY(stream.putback(x), InvalidStream, "Error while putting back a character.");
 
 			return error;
 		}
 
 		const FormatError& XmlStream::readComment(bool& parsedSomething)
 		{
-			FMTSTREAM_BEGIN_READ();
+			FMTSTREAM_READ_FUNC("XmlStream::readComment(bool& parsedSomething)");
 
 			char buffer[4];
 
 			// Read "<!--"
 
-			FMTSTREAM_VERIFY_CALL(streamRead, buffer, 4);
+			FMTSTREAM_READ(buffer, 4);
 			parsedSomething = std::equal(buffer, buffer + 4, "<!--");
 			if (!parsedSomething)
 			{
-				FMTSTREAM_VERIFY(stream.putback(buffer[3]), InvalidStream, "XmlStream::readComment: Error while putting back a character.");
-				FMTSTREAM_VERIFY(stream.putback(buffer[2]), InvalidStream, "XmlStream::readComment: Error while putting back a character.");
-				FMTSTREAM_VERIFY(stream.putback(buffer[1]), InvalidStream, "XmlStream::readComment: Error while putting back a character.");
-				FMTSTREAM_VERIFY(stream.putback(buffer[0]), InvalidStream, "XmlStream::readComment: Error while putting back a character.");
+				FMTSTREAM_VERIFY(stream.putback(buffer[3]), InvalidStream, "Error while putting back a character.");
+				FMTSTREAM_VERIFY(stream.putback(buffer[2]), InvalidStream, "Error while putting back a character.");
+				FMTSTREAM_VERIFY(stream.putback(buffer[1]), InvalidStream, "Error while putting back a character.");
+				FMTSTREAM_VERIFY(stream.putback(buffer[0]), InvalidStream, "Error while putting back a character.");
 				return error;
 			}
 
 			// Search for "--"
 
-			FMTSTREAM_VERIFY_CALL(streamRead, buffer, 2);
+			FMTSTREAM_READ(buffer, 2);
 			while (buffer[0] != '-' || buffer[1] != '-')
 			{
 				buffer[1] = buffer[0];
-				FMTSTREAM_VERIFY_CALL(streamRead, *buffer);
+				FMTSTREAM_READ(*buffer);
 			}
 
 			// Check the next character is '>'
 
-			FMTSTREAM_VERIFY_CALL(streamRead, *buffer);
-			FMTSTREAM_VERIFY(buffer[0] == '>', XmlInvalidComment, "XmlStream: Invalid double-hyphen ('--') in an XML comment without '>' behind it.");
+			FMTSTREAM_READ(*buffer);
+			FMTSTREAM_VERIFY(buffer[0] == '>', XmlInvalidComment, "Invalid double-hyphen ('--') in an XML comment without '>' behind it.");
 
 			return error;
 		}
 
 		const FormatError& XmlStream::readName(std::string& name)
 		{
-			FMTSTREAM_BEGIN_READ();
+			FMTSTREAM_READ_FUNC("XmlStream::readName(std::string& name)");
 
 			char x;
 
 			name.clear();
 
-			FMTSTREAM_VERIFY_CALL(streamRead, x);
+			FMTSTREAM_READ(x);
 			if (!isNameStartChar(x))
 			{
-				FMTSTREAM_VERIFY(stream.putback(x), InvalidStream, "XmlStream: Error while putting back first character of a name.");
+				FMTSTREAM_VERIFY(stream.putback(x), InvalidStream, "Error while putting back first character of a name.");
 				return error;
 			}
 
 			while (isNameChar(x))
 			{
 				name.push_back(x);
-				FMTSTREAM_VERIFY_CALL(streamRead, x);
+				FMTSTREAM_READ(x);
 			}
-			FMTSTREAM_VERIFY(stream.putback(x), InvalidStream, "XmlStream: Error while putting back character of a name.");
+			FMTSTREAM_VERIFY(stream.putback(x), InvalidStream, "Error while putting back character of a name.");
 
 			return error;
 		}
 
 		const FormatError& XmlStream::readSTag(xml::ElementData& elementData, bool& emptyElement)
 		{
-			FMTSTREAM_BEGIN_READ();
+			FMTSTREAM_READ_FUNC("XmlStream::readSTag(xml::ElementData& elementData, bool& emptyElement)");
 
 			char x;
 			bool parsedSomething;
 
 			// Read '<'
 
-			FMTSTREAM_VERIFY_CALL(streamRead, x);
-			FMTSTREAM_VERIFY(x == '<', XmlInvalidElement, "XmlStream: Expected '<' to start an element but instead found '" + std::string(&x, 1) + "'.");
+			FMTSTREAM_READ(x);
+			FMTSTREAM_VERIFY(x == '<', XmlInvalidElement, "Expected '<' to start an element but instead found '" + std::string(&x, 1) + "'.");
 
 			// Read tag
 
 			FMTSTREAM_VERIFY_CALL(readName, elementData.tag);
-			FMTSTREAM_VERIFY(!elementData.tag.empty(), XmlInvalidElement, "XmlStream: Expected element tag but could not read one.");
+			FMTSTREAM_VERIFY(!elementData.tag.empty(), XmlInvalidElement, "Expected element tag but could not read one.");
 
 			// Read attributes
 
@@ -416,21 +424,21 @@ namespace dsk
 				if (!attributeName.empty())
 				{
 					FMTSTREAM_VERIFY_CALL(readSpaces, parsedSomething);
-					FMTSTREAM_VERIFY_CALL(streamRead, x);
-					FMTSTREAM_VERIFY(x == '=', XmlInvalidElement, "XmlStream: '=' not found attribute name in element.");
+					FMTSTREAM_READ(x);
+					FMTSTREAM_VERIFY(x == '=', XmlInvalidElement, "'=' not found attribute name in element.");
 					FMTSTREAM_VERIFY_CALL(readSpaces, parsedSomething);
 
 					char opening;
-					FMTSTREAM_VERIFY_CALL(streamRead, opening);
-					FMTSTREAM_VERIFY(opening == '\'' || opening == '"', XmlInvalidElement, "XmlStream: Expected attribute value opening to be ''' or '\"' but instead found '" + std::string(&opening, 1) + "'.");
+					FMTSTREAM_READ(opening);
+					FMTSTREAM_VERIFY(opening == '\'' || opening == '"', XmlInvalidElement, "Expected attribute value opening to be ''' or '\"' but instead found '" + std::string(&opening, 1) + "'.");
 
 					std::string attributeValue;
-					FMTSTREAM_VERIFY_CALL(streamRead, x);
+					FMTSTREAM_READ(x);
 					while (x != opening)
 					{
-						FMTSTREAM_VERIFY(x != '<', XmlInvalidElement, "XmlStream: Found '<' in attribute value in element, which is forbidden.");
+						FMTSTREAM_VERIFY(x != '<', XmlInvalidElement, "Found '<' in attribute value in element, which is forbidden.");
 						attributeValue.push_back(x);
-						FMTSTREAM_VERIFY_CALL(streamRead, x);
+						FMTSTREAM_READ(x);
 					}
 
 					elementData.attributes[attributeName] = attributeValue;
@@ -441,62 +449,62 @@ namespace dsk
 
 			// Read '>' or '/>'
 
-			FMTSTREAM_VERIFY_CALL(streamRead, x);
+			FMTSTREAM_READ(x);
 			emptyElement = (x == '/');
 			if (emptyElement)
 			{
-				FMTSTREAM_VERIFY_CALL(streamRead, x);
+				FMTSTREAM_READ(x);
 			}
-			FMTSTREAM_VERIFY(x == '>', XmlInvalidElement, "XmlStream: Expected '>' at start of element but instead found '" + std::string(&x, 1) + "'.");
+			FMTSTREAM_VERIFY(x == '>', XmlInvalidElement, "Expected '>' at start of element but instead found '" + std::string(&x, 1) + "'.");
 
 			return error;
 		}
 
 		const FormatError& XmlStream::readETag(const std::string& tag)
 		{
-			FMTSTREAM_BEGIN_READ();
+			FMTSTREAM_READ_FUNC("XmlStream::readETag(const std::string& tag)");
 
 			char buffer[2];
 			bool parsedSomething;
 
 			// Read '</'
 
-			FMTSTREAM_VERIFY_CALL(streamRead, buffer, 2);
-			FMTSTREAM_VERIFY(buffer[0] == '<' && buffer[1] == '/', XmlInvalidElement, "XmlStream: Expected '</' at end of element but instead got '" + std::string(buffer, 2) + "'.");
+			FMTSTREAM_READ(buffer, 2);
+			FMTSTREAM_VERIFY(buffer[0] == '<' && buffer[1] == '/', XmlInvalidElement, "Expected '</' at end of element but instead got '" + std::string(buffer, 2) + "'.");
 
 			// Read tag
 
 			std::string tagFound;
 			FMTSTREAM_VERIFY_CALL(readName, tagFound);
-			FMTSTREAM_VERIFY(tagFound == tag, XmlInvalidElement, "XmlStream: Expected '</" + tag + "' but instead found '</" + tagFound + "'.");
+			FMTSTREAM_VERIFY(tagFound == tag, XmlInvalidElement, "Expected '</" + tag + "' but instead found '</" + tagFound + "'.");
 
 			// Read '>'
 
 			FMTSTREAM_VERIFY_CALL(readSpaces, parsedSomething);
-			FMTSTREAM_VERIFY_CALL(streamRead, *buffer);
-			FMTSTREAM_VERIFY(buffer[0] == '>', XmlInvalidElement, "XmlStream: Expected '>' at end of element but instead got '" + std::string(buffer, 1) + "'.");
+			FMTSTREAM_READ(*buffer);
+			FMTSTREAM_VERIFY(buffer[0] == '>', XmlInvalidElement, "Expected '>' at end of element but instead got '" + std::string(buffer, 1) + "'.");
 
 			return error;
 		}
 
 		const FormatError& XmlStream::readDeclaration(xml::Declaration& declaration, bool& parsedSomething)
 		{
-			FMTSTREAM_BEGIN_READ();
+			FMTSTREAM_READ_FUNC("XmlStream::readDeclaration(xml::Declaration& declaration, bool& parsedSomething)");
 
 			char buffer[10];
 			bool parsedSpace;
 
 			// Read '<?xml'
 
-			FMTSTREAM_VERIFY_CALL(streamRead, buffer, 5);
+			FMTSTREAM_READ(buffer, 5);
 			parsedSomething = std::equal(buffer, buffer + 5, "<?xml");
 			if (!parsedSomething)
 			{
-				FMTSTREAM_VERIFY(stream.putback(buffer[4]), InvalidStream, "XmlStream::readDeclaration: Error while putting back a character.");
-				FMTSTREAM_VERIFY(stream.putback(buffer[3]), InvalidStream, "XmlStream::readDeclaration: Error while putting back a character.");
-				FMTSTREAM_VERIFY(stream.putback(buffer[2]), InvalidStream, "XmlStream::readDeclaration: Error while putting back a character.");
-				FMTSTREAM_VERIFY(stream.putback(buffer[1]), InvalidStream, "XmlStream::readDeclaration: Error while putting back a character.");
-				FMTSTREAM_VERIFY(stream.putback(buffer[0]), InvalidStream, "XmlStream::readDeclaration: Error while putting back a character.");
+				FMTSTREAM_VERIFY(stream.putback(buffer[4]), InvalidStream, "Error while putting back a character.");
+				FMTSTREAM_VERIFY(stream.putback(buffer[3]), InvalidStream, "Error while putting back a character.");
+				FMTSTREAM_VERIFY(stream.putback(buffer[2]), InvalidStream, "Error while putting back a character.");
+				FMTSTREAM_VERIFY(stream.putback(buffer[1]), InvalidStream, "Error while putting back a character.");
+				FMTSTREAM_VERIFY(stream.putback(buffer[0]), InvalidStream, "Error while putting back a character.");
 				return error;
 			}
 
@@ -504,29 +512,29 @@ namespace dsk
 
 			// Read version
 
-			FMTSTREAM_VERIFY_CALL(streamRead, buffer, 7);
-			FMTSTREAM_VERIFY(std::equal(buffer, buffer + 7, "version"), XmlInvalidDeclaration, "XmlStream: Expected 'version' in XML declaration but instead got '" + std::string(buffer, 7) + "'.");
+			FMTSTREAM_READ(buffer, 7);
+			FMTSTREAM_VERIFY(std::equal(buffer, buffer + 7, "version"), XmlInvalidDeclaration, "Expected 'version' in XML declaration but instead got '" + std::string(buffer, 7) + "'.");
 
 			FMTSTREAM_VERIFY_CALL(readSpaces, parsedSpace);
-			FMTSTREAM_VERIFY_CALL(streamRead, *buffer);
-			FMTSTREAM_VERIFY(buffer[0] == '=', XmlInvalidDeclaration, "XmlStream: '=' not found after 'version' in XML declaration.");
+			FMTSTREAM_READ(*buffer);
+			FMTSTREAM_VERIFY(buffer[0] == '=', XmlInvalidDeclaration, "'=' not found after 'version' in XML declaration.");
 			FMTSTREAM_VERIFY_CALL(readSpaces, parsedSpace);
 
-			FMTSTREAM_VERIFY_CALL(streamRead, buffer, 3);
-			FMTSTREAM_VERIFY(buffer[0] == '\'' || buffer[0] == '"', XmlInvalidDeclaration, "XmlStream: Error while reading version in XML declaration. Expected ''' or '\"' but instead got '" + std::string(buffer, 1) + "'.");
-			FMTSTREAM_VERIFY(buffer[1] == '1' && buffer[2] == '.', XmlInvalidDeclaration, "XmlStream: Invalid version in XML declaration. Should start with '1.' but instead started with '" + std::string(buffer + 1, 2) + "'.");
+			FMTSTREAM_READ(buffer, 3);
+			FMTSTREAM_VERIFY(buffer[0] == '\'' || buffer[0] == '"', XmlInvalidDeclaration, "Error while reading version in XML declaration. Expected ''' or '\"' but instead got '" + std::string(buffer, 1) + "'.");
+			FMTSTREAM_VERIFY(buffer[1] == '1' && buffer[2] == '.', XmlInvalidDeclaration, "Invalid version in XML declaration. Should start with '1.' but instead started with '" + std::string(buffer + 1, 2) + "'.");
 			declaration.versionMajor = 1;
 
 			buffer[1] = buffer[0];
-			FMTSTREAM_VERIFY_CALL(streamRead, *buffer);
-			FMTSTREAM_VERIFY(buffer[0] >= 0x30 && buffer[0] <= 0x39, XmlInvalidDeclaration, "XmlStream: Invalid version in XML declaration: '1." + std::string(buffer, 1) + "'.");
+			FMTSTREAM_READ(*buffer);
+			FMTSTREAM_VERIFY(buffer[0] >= 0x30 && buffer[0] <= 0x39, XmlInvalidDeclaration, "Invalid version in XML declaration: '1." + std::string(buffer, 1) + "'.");
 			declaration.versionMinor = 0;
 			while (buffer[0] >= 0x30 && buffer[0] <= 0x39)
 			{
 				declaration.versionMinor = 10 * declaration.versionMinor + (buffer[0] - 0x30);
-				FMTSTREAM_VERIFY_CALL(streamRead, *buffer);
+				FMTSTREAM_READ(*buffer);
 			}
-			FMTSTREAM_VERIFY(buffer[0] == buffer[1], XmlInvalidDeclaration, "XmlStream: Error while reading version in XML declaration. Expected '" + std::string(buffer + 1, 1) + "' but got '" + std::string(buffer, 1) + "'.");
+			FMTSTREAM_VERIFY(buffer[0] == buffer[1], XmlInvalidDeclaration, "Error while reading version in XML declaration. Expected '" + std::string(buffer + 1, 1) + "' but got '" + std::string(buffer, 1) + "'.");
 
 			// Read encoding
 
@@ -535,35 +543,35 @@ namespace dsk
 			FMTSTREAM_VERIFY_CALL(readSpaces, parsedSpace);
 			if (parsedSpace)
 			{
-				FMTSTREAM_VERIFY_CALL(streamRead, *buffer);
+				FMTSTREAM_READ(*buffer);
 				if (buffer[0] == 'e')
 				{
-					FMTSTREAM_VERIFY_CALL(streamRead, buffer + 1, 7);
-					FMTSTREAM_VERIFY(std::equal(buffer, buffer + 8, "encoding"), XmlInvalidDeclaration, "XmlStream: 'encoding' could not completely be read. Instead, got '" + std::string(buffer, 8) + "'.");
+					FMTSTREAM_READ(buffer + 1, 7);
+					FMTSTREAM_VERIFY(std::equal(buffer, buffer + 8, "encoding"), XmlInvalidDeclaration, "'encoding' could not completely be read. Instead, got '" + std::string(buffer, 8) + "'.");
 
 					FMTSTREAM_VERIFY_CALL(readSpaces, parsedSpace);
-					FMTSTREAM_VERIFY_CALL(streamRead, *buffer);
-					FMTSTREAM_VERIFY(buffer[0] == '=', XmlInvalidDeclaration, "XmlStream: '=' not found after 'encoding' in XML declaration.");
+					FMTSTREAM_READ(*buffer);
+					FMTSTREAM_VERIFY(buffer[0] == '=', XmlInvalidDeclaration, "'=' not found after 'encoding' in XML declaration.");
 					FMTSTREAM_VERIFY_CALL(readSpaces, parsedSpace);
 
-					FMTSTREAM_VERIFY_CALL(streamRead, *buffer);
-					FMTSTREAM_VERIFY(buffer[0] == '\'' || buffer[0] == '"', XmlInvalidDeclaration, "XmlStream: ''' or '\"' not found after 'encoding = '. Instead, found '" + std::string(buffer, 1) + "'.");
+					FMTSTREAM_READ(*buffer);
+					FMTSTREAM_VERIFY(buffer[0] == '\'' || buffer[0] == '"', XmlInvalidDeclaration, "''' or '\"' not found after 'encoding = '. Instead, found '" + std::string(buffer, 1) + "'.");
 					
 					buffer[1] = buffer[0];
-					FMTSTREAM_VERIFY_CALL(streamRead, *buffer);
-					FMTSTREAM_VERIFY(std::isalpha(buffer[0]), XmlInvalidDeclaration, "XmlStream: Invalid first character for encoding name in XML declaration. Expected alphabetic character, got '" + std::string(buffer, 1) + "'.");
+					FMTSTREAM_READ(*buffer);
+					FMTSTREAM_VERIFY(std::isalpha(buffer[0]), XmlInvalidDeclaration, "Invalid first character for encoding name in XML declaration. Expected alphabetic character, got '" + std::string(buffer, 1) + "'.");
 
 					declaration.encoding = std::string();
 					while (std::isalnum(buffer[0]) || buffer[0] == '-' || buffer[0] == '_' || buffer[0] == '.')
 					{
 						declaration.encoding->push_back(buffer[0]);
-						FMTSTREAM_VERIFY_CALL(streamRead, *buffer);
+						FMTSTREAM_READ(*buffer);
 					}
-					FMTSTREAM_VERIFY(buffer[0] == buffer[1], XmlInvalidDeclaration, "XmlStream: Invalid character in encoding name in XML declaration: '" + std::string(buffer, 1) + "'.");
+					FMTSTREAM_VERIFY(buffer[0] == buffer[1], XmlInvalidDeclaration, "Invalid character in encoding name in XML declaration: '" + std::string(buffer, 1) + "'.");
 				}
 				else
 				{
-					FMTSTREAM_VERIFY(stream.putback(buffer[0]), InvalidStream, "XmlStream: Error while putting back character for encoding presence in XML declaration.");
+					FMTSTREAM_VERIFY(stream.putback(buffer[0]), InvalidStream, "Error while putting back character for encoding presence in XML declaration.");
 				}
 			}
 
@@ -574,21 +582,21 @@ namespace dsk
 			FMTSTREAM_VERIFY_CALL(readSpaces, parsedSpace);
 			if (parsedSpace)
 			{
-				FMTSTREAM_VERIFY_CALL(streamRead, *buffer);
+				FMTSTREAM_READ(*buffer);
 				if (buffer[0] == 's')
 				{
-					FMTSTREAM_VERIFY_CALL(streamRead, buffer + 1, 9);
-					FMTSTREAM_VERIFY(std::equal(buffer, buffer + 10, "standalone"), XmlInvalidDeclaration, "XmlStream: 'standalone' could not completely be read. Instead, got '" + std::string(buffer, 10) + "'.");
+					FMTSTREAM_READ(buffer + 1, 9);
+					FMTSTREAM_VERIFY(std::equal(buffer, buffer + 10, "standalone"), XmlInvalidDeclaration, "'standalone' could not completely be read. Instead, got '" + std::string(buffer, 10) + "'.");
 
 					FMTSTREAM_VERIFY_CALL(readSpaces, parsedSpace);
-					FMTSTREAM_VERIFY_CALL(streamRead, *buffer);
-					FMTSTREAM_VERIFY(buffer[0] == '=', XmlInvalidDeclaration, "XmlStream: '=' not found after 'standalone' in XML declaration.");
+					FMTSTREAM_READ(*buffer);
+					FMTSTREAM_VERIFY(buffer[0] == '=', XmlInvalidDeclaration, "'=' not found after 'standalone' in XML declaration.");
 					FMTSTREAM_VERIFY_CALL(readSpaces, parsedSpace);
 
-					FMTSTREAM_VERIFY_CALL(streamRead, buffer, 4);
+					FMTSTREAM_READ(buffer, 4);
 					if (buffer[1] == 'y')
 					{
-						FMTSTREAM_VERIFY_CALL(streamRead, *(buffer + 4));
+						FMTSTREAM_READ(*(buffer + 4));
 						FMTSTREAM_VERIFY(std::equal(buffer, buffer + 5, "'yes'") || std::equal(buffer, buffer + 5, "\"yes\""), XmlInvalidDeclaration, "XmlStream: Expected standalone to be 'yes' in XML declaration but instead got " + std::string(buffer, 5) + ".");
 						declaration.standalone = true;
 					}
@@ -600,87 +608,87 @@ namespace dsk
 				}
 				else
 				{
-					FMTSTREAM_VERIFY(stream.putback(buffer[0]), InvalidStream, "XmlStream: Error while putting back character for standalone presence in XML declaration.");
+					FMTSTREAM_VERIFY(stream.putback(buffer[0]), InvalidStream, "Error while putting back character for standalone presence in XML declaration.");
 				}
 			}
 
 			// Read '?>'
 
 			FMTSTREAM_VERIFY_CALL(readSpaces, parsedSpace);
-			FMTSTREAM_VERIFY_CALL(streamRead, buffer, 2);
-			FMTSTREAM_VERIFY(buffer[0] == '?' && buffer[1] == '>', XmlInvalidDeclaration, "XmlStream: Expected '?>' in XML declaration but instead got '" + std::string(buffer, 2) + "'.");
+			FMTSTREAM_READ(buffer, 2);
+			FMTSTREAM_VERIFY(buffer[0] == '?' && buffer[1] == '>', XmlInvalidDeclaration, "Expected '?>' in XML declaration but instead got '" + std::string(buffer, 2) + "'.");
 
 			return error;
 		}
 
 		const FormatError& XmlStream::readDoctype(xml::DocType& doctype, bool& parsedSomething)
 		{
-			FMTSTREAM_BEGIN_READ();
+			FMTSTREAM_READ_FUNC("XmlStream::readDoctype(xml::DocType& doctype, bool& parsedSomething)");
 
 			char buffer[9];
 			bool parsedSpace;
 
 			// Read '<!DOCTYPE'
 
-			FMTSTREAM_VERIFY_CALL(streamRead, buffer, 9);
+			FMTSTREAM_READ(buffer, 9);
 			parsedSomething = std::equal(buffer, buffer + 9, "<!DOCTYPE");
 			if (!parsedSomething)
 			{
-				FMTSTREAM_VERIFY(stream.putback(buffer[8]), InvalidStream, "XmlStream::readDoctype: Error while putting back a character.");
-				FMTSTREAM_VERIFY(stream.putback(buffer[7]), InvalidStream, "XmlStream::readDoctype: Error while putting back a character.");
-				FMTSTREAM_VERIFY(stream.putback(buffer[6]), InvalidStream, "XmlStream::readDoctype: Error while putting back a character.");
-				FMTSTREAM_VERIFY(stream.putback(buffer[5]), InvalidStream, "XmlStream::readDoctype: Error while putting back a character.");
-				FMTSTREAM_VERIFY(stream.putback(buffer[4]), InvalidStream, "XmlStream::readDoctype: Error while putting back a character.");
-				FMTSTREAM_VERIFY(stream.putback(buffer[3]), InvalidStream, "XmlStream::readDoctype: Error while putting back a character.");
-				FMTSTREAM_VERIFY(stream.putback(buffer[2]), InvalidStream, "XmlStream::readDoctype: Error while putting back a character.");
-				FMTSTREAM_VERIFY(stream.putback(buffer[1]), InvalidStream, "XmlStream::readDoctype: Error while putting back a character.");
-				FMTSTREAM_VERIFY(stream.putback(buffer[0]), InvalidStream, "XmlStream::readDoctype: Error while putting back a character.");
+				FMTSTREAM_VERIFY(stream.putback(buffer[8]), InvalidStream, "Error while putting back a character.");
+				FMTSTREAM_VERIFY(stream.putback(buffer[7]), InvalidStream, "Error while putting back a character.");
+				FMTSTREAM_VERIFY(stream.putback(buffer[6]), InvalidStream, "Error while putting back a character.");
+				FMTSTREAM_VERIFY(stream.putback(buffer[5]), InvalidStream, "Error while putting back a character.");
+				FMTSTREAM_VERIFY(stream.putback(buffer[4]), InvalidStream, "Error while putting back a character.");
+				FMTSTREAM_VERIFY(stream.putback(buffer[3]), InvalidStream, "Error while putting back a character.");
+				FMTSTREAM_VERIFY(stream.putback(buffer[2]), InvalidStream, "Error while putting back a character.");
+				FMTSTREAM_VERIFY(stream.putback(buffer[1]), InvalidStream, "Error while putting back a character.");
+				FMTSTREAM_VERIFY(stream.putback(buffer[0]), InvalidStream, "Error while putting back a character.");
 				return error;
 			}
 
 			// Read name
 
 			FMTSTREAM_VERIFY_CALL(readSpaces, parsedSpace);
-			FMTSTREAM_VERIFY(parsedSpace, XmlInvalidDoctype, "XmlStream: Expected space after '<!DOCTYPE' but found no space.");
+			FMTSTREAM_VERIFY(parsedSpace, XmlInvalidDoctype, "Expected space after '<!DOCTYPE' but found no space.");
 			FMTSTREAM_VERIFY_CALL(readName, doctype.name);
-			FMTSTREAM_VERIFY(!doctype.name.empty(), XmlInvalidDoctype, "XmlStream: Error while parsing doctype name.");
+			FMTSTREAM_VERIFY(!doctype.name.empty(), XmlInvalidDoctype, "Error while parsing doctype name.");
 
 			// Read '>'
 
 			FMTSTREAM_VERIFY_CALL(readSpaces, parsedSpace);
-			FMTSTREAM_VERIFY_CALL(streamRead, *buffer);
-			FMTSTREAM_VERIFY(buffer[0] == '>', XmlInvalidDoctype, "XmlStream: Expected '>' to end doctype but instead found '" + std::string(buffer, 1) + "'.");
+			FMTSTREAM_READ(*buffer);
+			FMTSTREAM_VERIFY(buffer[0] == '>', XmlInvalidDoctype, "Expected '>' to end doctype but instead found '" + std::string(buffer, 1) + "'.");
 
 			return error;
 		}
 
 		const FormatError& XmlStream::readProcessingInstruction(xml::ProcessingInstruction& instruction, bool& parsedSomething)
 		{
-			FMTSTREAM_BEGIN_READ();
+			FMTSTREAM_READ_FUNC("XmlStream::readProcessingInstruction(xml::ProcessingInstruction& instruction, bool& parsedSomething)");
 
 			char buffer[2];
 			bool parsedSpace;
 
 			// Read '<?'
 
-			FMTSTREAM_VERIFY_CALL(streamRead, buffer, 2);
+			FMTSTREAM_READ(buffer, 2);
 			parsedSomething = std::equal(buffer, buffer + 2, "<?");
 			if (!parsedSomething)
 			{
-				FMTSTREAM_VERIFY(stream.putback(buffer[1]), InvalidStream, "XmlStream::readProcessingInstruction: Error while putting back a character.");
-				FMTSTREAM_VERIFY(stream.putback(buffer[0]), InvalidStream, "XmlStream::readProcessingInstruction: Error while putting back a character.");
+				FMTSTREAM_VERIFY(stream.putback(buffer[1]), InvalidStream, "Error while putting back a character.");
+				FMTSTREAM_VERIFY(stream.putback(buffer[0]), InvalidStream, "Error while putting back a character.");
 				return error;
 			}
 
 			// Read target
 
 			FMTSTREAM_VERIFY_CALL(readName, instruction.target);
-			FMTSTREAM_VERIFY(!instruction.target.empty(), XmlInvalidProcessingInstruction, "XmlStream: Error while parsing processing instruction target.");
+			FMTSTREAM_VERIFY(!instruction.target.empty(), XmlInvalidProcessingInstruction, "Error while parsing processing instruction target.");
 			bool targetStartNotXML = instruction.target.size() != 3
 				|| std::toupper(instruction.target[0]) != 'X'
 				|| std::toupper(instruction.target[1]) != 'M'
 				|| std::toupper(instruction.target[2]) != 'L';
-			FMTSTREAM_VERIFY(targetStartNotXML, XmlInvalidProcessingInstruction, "XmlStream: PI Target cannot starts with 'XML'. PI Target: '" + instruction.target + "'.");
+			FMTSTREAM_VERIFY(targetStartNotXML, XmlInvalidProcessingInstruction, "PI Target cannot starts with 'XML'. PI Target: '" + instruction.target + "'.");
 
 			// Read instruction and '?>'
 
@@ -688,12 +696,12 @@ namespace dsk
 			FMTSTREAM_VERIFY_CALL(readSpaces, parsedSpace);
 			if (parsedSpace)
 			{
-				FMTSTREAM_VERIFY_CALL(streamRead, buffer, 2);
+				FMTSTREAM_READ(buffer, 2);
 				while (buffer[0] != '?' || buffer[1] != '>')
 				{
 					instruction.instruction.push_back(buffer[0]);
 					buffer[0] = buffer[1];
-					FMTSTREAM_VERIFY_CALL(streamRead, *(buffer + 1));
+					FMTSTREAM_READ(*(buffer + 1));
 				}
 			}
 
@@ -702,8 +710,8 @@ namespace dsk
 
 		const FormatError& XmlStream::readPIsSpacesAndComments(std::vector<xml::ProcessingInstruction>& instructions)
 		{
-			FMTSTREAM_BEGIN_READ();
-			
+			FMTSTREAM_READ_FUNC("XmlStream::readPIsSpacesAndComments(std::vector<xml::ProcessingInstruction>& instructions)");
+
 			bool parsedSpaces, parsedComment, parsedPI;
 			xml::ProcessingInstruction instruction;
 
@@ -730,7 +738,7 @@ namespace dsk
 	
 		const FormatError& XmlStream::readRawElement(void* elementPtr, bool tree)
 		{
-			FMTSTREAM_BEGIN_READ();
+			FMTSTREAM_READ_FUNC("XmlStream::readRawElement(void* elementPtr, bool tree)");
 
 			char buffer[2];
 			bool parsedSomething;
@@ -767,13 +775,13 @@ namespace dsk
 
 			// Read content
 
-			FMTSTREAM_VERIFY_CALL(streamRead, buffer, 2);
+			FMTSTREAM_READ(buffer, 2);
 			while (buffer[0] != '<' || buffer[1] != '/')
 			{
 				if (buffer[0] == '<')
 				{
-					FMTSTREAM_VERIFY(stream.putback(buffer[1]), InvalidStream, "XmlStream::readElementTree: Error while putting back character.");
-					FMTSTREAM_VERIFY(stream.putback(buffer[0]), InvalidStream, "XmlStream::readElementTree: Error while putting back character.");
+					FMTSTREAM_VERIFY(stream.putback(buffer[1]), InvalidStream, "Error while putting back character.");
+					FMTSTREAM_VERIFY(stream.putback(buffer[0]), InvalidStream, "Error while putting back character.");
 
 					if (buffer[1] == '?')
 					{
@@ -783,7 +791,7 @@ namespace dsk
 					else if (buffer[1] == '!')
 					{
 						FMTSTREAM_VERIFY_CALL(readComment, parsedSomething);
-						FMTSTREAM_VERIFY(parsedSomething, XmlInvalidElement, "XmlStream: Expected comment but could not parse one in element.");
+						FMTSTREAM_VERIFY(parsedSomething, XmlInvalidElement, "Expected comment but could not parse one in element.");
 						// TODO: if (!parsedSomehting) readCDSect();
 					}
 					else
@@ -803,17 +811,17 @@ namespace dsk
 						}
 					}
 
-					FMTSTREAM_VERIFY_CALL(streamRead, buffer, 2);
+					FMTSTREAM_READ(buffer, 2);
 				}
 				else
 				{
 					elementData->content.push_back(buffer[0]);
 					buffer[0] = buffer[1];
-					FMTSTREAM_VERIFY_CALL(streamRead, *(buffer + 1));
+					FMTSTREAM_READ(*(buffer + 1));
 				}
 			}
-			FMTSTREAM_VERIFY(stream.putback(buffer[1]), InvalidStream, "XmlStream::readElementTree: Error while putting back character.");
-			FMTSTREAM_VERIFY(stream.putback(buffer[0]), InvalidStream, "XmlStream::readElementTree: Error while putting back character.");
+			FMTSTREAM_VERIFY(stream.putback(buffer[1]), InvalidStream, "Error while putting back character.");
+			FMTSTREAM_VERIFY(stream.putback(buffer[0]), InvalidStream, "Error while putting back character.");
 
 			// Read ETag
 
@@ -842,9 +850,9 @@ namespace dsk
 				return error;
 			}
 
-			FMTSTREAM_VERIFY(stream, InvalidStream, "XmlStream::readElementTree: Error while searching next element.");
-			FMTSTREAM_VERIFY(stream.putback(buffer[1]), InvalidStream, "XmlStream::readElementTree: Error while putting back character.");
-			FMTSTREAM_VERIFY(stream.putback(buffer[0]), InvalidStream, "XmlStream::readElementTree: Error while putting back character.");
+			FMTSTREAM_VERIFY(stream, InvalidStream, "Error while searching next element.");
+			FMTSTREAM_VERIFY(stream.putback(buffer[1]), InvalidStream, "Error while putting back character.");
+			FMTSTREAM_VERIFY(stream.putback(buffer[0]), InvalidStream, "Error while putting back character.");
 
 			return error;
 		}

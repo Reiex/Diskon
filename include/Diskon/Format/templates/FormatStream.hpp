@@ -12,7 +12,8 @@ namespace dsk
 			if (!_srcStream->read(reinterpret_cast<char*>(&value), sizeof(TValue)))
 			{
 				_error.errorCode = FormatError::ErrorCode::InvalidStream;
-				_error.errorMessage = "FormatStream: Error while reading a single value of size " + std::to_string(sizeof(TValue)) + ".";
+				_error.errorMessage = "FormatStream::streamRead(TValue& value): Error while reading a single value of size " + std::to_string(sizeof(TValue)) + ".";
+				return _error;
 			}
 
 			if constexpr (sizeof(TValue) > 1)
@@ -32,7 +33,8 @@ namespace dsk
 			if (!_srcStream->read(reinterpret_cast<char*>(values), sizeof(TValue) * count))
 			{
 				_error.errorCode = FormatError::ErrorCode::InvalidStream;
-				_error.errorMessage = "FormatStream: Error while reading an array of " + std::to_string(count) + " values of size " + std::to_string(sizeof(TValue)) + ".";
+				_error.errorMessage = "FormatStream::streamRead(TValue* values, uint64_t count): Error while reading an array of " + std::to_string(count) + " values of size " + std::to_string(sizeof(TValue)) + ".";
+				return _error;
 			}
 
 			if constexpr (sizeof(TValue) > 1)
@@ -63,7 +65,7 @@ namespace dsk
 			if (!_dstStream->write(reinterpret_cast<const char*>(&value), sizeof(TValue)))
 			{
 				_error.errorCode = FormatError::ErrorCode::InvalidStream;
-				_error.errorMessage = "FormatStream: Error while writing a single value of size " + std::to_string(sizeof(TValue)) + ".";
+				_error.errorMessage = "FormatStream::streamWrite(TValue value): Error while writing a single value of size " + std::to_string(sizeof(TValue)) + ".";
 			}
 
 			return _error;
@@ -93,7 +95,7 @@ namespace dsk
 			if (!_dstStream->write(reinterpret_cast<const char*>(savedValues), sizeof(TValue) * count))
 			{
 				_error.errorCode = FormatError::ErrorCode::InvalidStream;
-				_error.errorMessage = "FormatStream: Error while writing an array of " + std::to_string(count) + " values of size " + std::to_string(sizeof(TValue)) + ".";
+				_error.errorMessage = "FormatStream::streamWrite(const TValue* values, uint64_t count): Error while writing an array of " + std::to_string(count) + " values of size " + std::to_string(sizeof(TValue)) + ".";
 			}
 
 			if (savedValues != values)

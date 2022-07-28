@@ -46,7 +46,7 @@ namespace dsk
 			if (!std::filesystem::exists(path))
 			{
 				_error.errorCode = FormatError::ErrorCode::FileNotFound;
-				_error.errorMessage = "FormatStream: Could not find '" + path.string() + "'.";
+				_error.errorMessage = "FormatStream::setSource(const std::filesystem::path& path): Could not find '" + path.string() + "'.";
 				return _error;
 			}
 
@@ -55,7 +55,7 @@ namespace dsk
 			if (!(*_srcStream))
 			{
 				_error.errorCode = FormatError::ErrorCode::FileOpenFailed;
-				_error.errorMessage = "FormatStream: Could not open '" + path.string() + "' for source.";
+				_error.errorMessage = "FormatStream::setSource(const std::filesystem::path& path): Could not open '" + path.string() + "' for source.";
 				return _error;
 			}
 
@@ -77,7 +77,7 @@ namespace dsk
 			if (!(*_srcStream))
 			{
 				_error.errorCode = FormatError::ErrorCode::InvalidStream;
-				_error.errorMessage = "FormatStream: Invalid stream set as source.";
+				_error.errorMessage = "FormatStream::setSource(std::istream& stream): Invalid stream set as source.";
 				return _error;
 			}
 
@@ -106,14 +106,14 @@ namespace dsk
 			if (!_srcStream)
 			{
 				_error.errorCode = FormatError::ErrorCode::NoStream;
-				_error.errorMessage = "FormatStream: Try to set source pos without source set.";
+				_error.errorMessage = "FormatStream::setSourcePos(std::streampos pos): Try to set source pos without source set.";
 				return _error;
 			}
 
 			if (!(*_srcStream))
 			{
 				_error.errorCode = FormatError::ErrorCode::InvalidStream;
-				_error.errorMessage = "FormatStream: Try to set source pos with source invalid.";
+				_error.errorMessage = "FormatStream::setSourcePos(std::streampos pos): Try to set source pos with source invalid.";
 				return _error;
 			}
 
@@ -129,7 +129,7 @@ namespace dsk
 			if (!_srcStream)
 			{
 				_error.errorCode = FormatError::ErrorCode::NoStream;
-				_error.errorMessage = "FormatStream: Try to remove inexistant source.";
+				_error.errorMessage = "FormatStream::removeSource(): Try to remove inexistant source.";
 				return _error;
 			}
 
@@ -159,7 +159,7 @@ namespace dsk
 			if (!(*_dstStream))
 			{
 				_error.errorCode = FormatError::ErrorCode::FileOpenFailed;
-				_error.errorMessage = "FormatStream: Could not open '" + path.string() + "' for destination.";
+				_error.errorMessage = "FormatStream::setDestination(const std::filesystem::path& path): Could not open '" + path.string() + "' for destination.";
 				return _error;
 			}
 
@@ -181,7 +181,7 @@ namespace dsk
 			if (!(*_dstStream))
 			{
 				_error.errorCode = FormatError::ErrorCode::InvalidStream;
-				_error.errorMessage = "FormatStream: Invalid stream set as destination.";
+				_error.errorMessage = "FormatStream::setDestination(std::ostream& stream): Invalid stream set as destination.";
 				return _error;
 			}
 
@@ -210,14 +210,14 @@ namespace dsk
 			if (!_dstStream)
 			{
 				_error.errorCode = FormatError::ErrorCode::NoStream;
-				_error.errorMessage = "FormatStream: Try to set source pos without source set.";
+				_error.errorMessage = "FormatStream::setDestinationPos(std::streampos pos): Try to set source pos without source set.";
 				return _error;
 			}
 
 			if (!(*_dstStream))
 			{
 				_error.errorCode = FormatError::ErrorCode::InvalidStream;
-				_error.errorMessage = "FormatStream: Try to set source pos with source invalid.";
+				_error.errorMessage = "FormatStream::setDestinationPos(std::streampos pos): Try to set source pos with source invalid.";
 				return _error;
 			}
 
@@ -233,7 +233,7 @@ namespace dsk
 			if (!_dstStream)
 			{
 				_error.errorCode = FormatError::ErrorCode::NoStream;
-				_error.errorMessage = "FormatStream: Try to remove inexistant destination.";
+				_error.errorMessage = "FormatStream::removeDestination(): Try to remove inexistant destination.";
 				return _error;
 			}
 

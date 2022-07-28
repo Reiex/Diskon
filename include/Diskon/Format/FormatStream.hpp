@@ -101,19 +101,16 @@ namespace dsk
 
 				template<typename TValue> const FormatError& streamRead(TValue& value);
 				template<typename TValue> const FormatError& streamRead(TValue* values, uint64_t count);
+
 				template<typename TValue> const FormatError& streamWrite(TValue value);
 				template<typename TValue> const FormatError& streamWrite(const TValue* values, uint64_t count);
 
 				FormatError _error;
-				std::endian _endianness;
-
 				std::istream* _srcStream;
 				std::ostream* _dstStream;
-
-			private:
-
 				bool _srcStreamOwned;
 				bool _dstStreamOwned;
+				std::endian _endianness;
 		};
 	}
 }

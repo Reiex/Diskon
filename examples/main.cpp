@@ -12,7 +12,7 @@ void waveExample()
 	dsk::fmt::wave::Header outHeader;
 	outHeader.formatTag = dsk::fmt::wave::Format::PCM;
 	outHeader.channels = inHeader.channels;
-	outHeader.samplesPerSec = 22050;
+	outHeader.samplesPerSec = 44100;
 	outHeader.bitsPerSample = 8;
 	outHeader.blockAlign = ((outHeader.bitsPerSample + 7) / 8) * outHeader.channels;
 	outHeader.avgBytesPerSec = outHeader.blockAlign * outHeader.samplesPerSec;
@@ -46,11 +46,11 @@ void xmlExample()
 
 void pngExample()
 {
-	dsk::fmt::PngStream pngStream;
-	pngStream.setSource("build/input_test.png");
-
-	dsk::fmt::png::File pngFile;
-	pngStream.readFile(pngFile);
+	// dsk::fmt::PngStream pngStream;
+	// pngStream.setSource("build/input_test.png");
+	// 
+	// dsk::fmt::png::File pngFile;
+	// pngStream.readFile(pngFile);
 }
 
 int main()

@@ -1,5 +1,6 @@
 #include <Diskon/Format/Format.hpp>
 
+/*
 namespace dsk
 {
 	namespace fmt
@@ -408,7 +409,7 @@ namespace dsk
 				{
 					delete chunk;
 					return error;
-				}*/
+				}
 
 				FMTSTREAM_VERIFY_CALL(readChunkHeader, stream, error, chunkHeader);
 			}
@@ -463,3 +464,4 @@ namespace dsk
 		}
 	}
 }
+*/

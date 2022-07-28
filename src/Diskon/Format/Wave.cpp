@@ -125,26 +125,26 @@ namespace dsk
 
 		const FormatError& WaveStream::readFile(wave::File& file)
 		{
-			FMTSTREAM_BEGIN_READ();
+			FMTSTREAM_BEGIN_READ_FUNC("WaveStream::readFile(wave::File& file)");
 
 			FMTSTREAM_VERIFY_CALL(readHeader, file.header);
 
 			file.rawSamples.resize(file.header.blockAlign * file.header.blockCount);
-			FMTSTREAM_VERIFY_CALL(streamRead, file.rawSamples.data(), file.rawSamples.size());
+			FMTSTREAM_READ(file.rawSamples.data(), file.rawSamples.size());
 
 			return error;
 		}
 
 		const FormatError& WaveStream::readHeader(wave::Header& header)
 		{
-			FMTSTREAM_BEGIN_READ();
+			FMTSTREAM_BEGIN_READ_FUNC("WaveStream::readHeader(wave::Header& header)");
 
 			RiffStream riffStream;
 			FMTSTREAM_VERIFY_STREAM_CALL(riffStream, setSource, stream);
 
 			riff::FileHeader fileHeader;
 			FMTSTREAM_VERIFY_STREAM_CALL(riffStream, readFileHeader, fileHeader);
-			FMTSTREAM_VERIFY(std::equal(fileHeader.formType, fileHeader.formType + 4, "WAVE"), WaveBadFormType, "WaveStream: Bad form-type for RIFF file of WAVE.");
+			FMTSTREAM_VERIFY(std::equal(fileHeader.formType, fileHeader.formType + 4, "WAVE"), WaveBadFormType, "Bad form-type for RIFF file of WAVE.");
 			
 			// Create index of all chunks in the file
 
@@ -156,29 +156,29 @@ namespace dsk
 			fileHeader.size -= 4;
 			while (fileHeader.size)
 			{
-				FMTSTREAM_VERIFY(fileHeader.size >= 8, RiffInvalidFileSize, "WaveStream: Error while reading RIFF chunk. Expected remaining file size to be more than 8, got " + std::to_string(fileHeader.size));
+				FMTSTREAM_VERIFY(fileHeader.size >= 8, RiffInvalidFileSize, "Error while reading RIFF chunk. Expected remaining file size to be more than 8, got " + std::to_string(fileHeader.size));
 				fileHeader.size -= 8;
 
 				std::streampos savedPos = riffStream.getSourcePos();
 
 				FMTSTREAM_VERIFY_STREAM_CALL(riffStream, readChunkHeader, chunkHeader);
 
-				FMTSTREAM_VERIFY(fileHeader.size >= chunkHeader.size, RiffInvalidFileSize, "WaveStream: Error while reading RIFF chunk. Expected remaining file size to be more than chunk size (" + std::to_string(chunkHeader.size) + "), got " + std::to_string(fileHeader.size));
+				FMTSTREAM_VERIFY(fileHeader.size >= chunkHeader.size, RiffInvalidFileSize, "Error while reading RIFF chunk. Expected remaining file size to be more than chunk size (" + std::to_string(chunkHeader.size) + "), got " + std::to_string(fileHeader.size));
 				fileHeader.size -= chunkHeader.size;
 
 				index[{chunkHeader.id, 4}] = savedPos;
 				FMTSTREAM_VERIFY_STREAM_CALL(riffStream, setSourcePos, riffStream.getSourcePos() + std::streamoff(chunkHeader.size));
 			}
 
-			FMTSTREAM_VERIFY(index.find("fmt ") != index.end(), WaveNoFmtChunk, "WaveStream: 'fmt ' RIFF chunk not found.");
-			FMTSTREAM_VERIFY(index.find("data") != index.end(), WaveNoDataChunk, "WaveStream: 'data' RIFF chunk not found.");
+			FMTSTREAM_VERIFY(index.find("fmt ") != index.end(), WaveNoFmtChunk, "'fmt ' RIFF chunk not found.");
+			FMTSTREAM_VERIFY(index.find("data") != index.end(), WaveNoDataChunk, "'data' RIFF chunk not found.");
 
 			// Load "fmt " chunk
 
 			FMTSTREAM_VERIFY_STREAM_CALL(riffStream, setSourcePos, index["fmt "]);
 			FMTSTREAM_VERIFY_STREAM_CALL(riffStream, readChunk, chunk);
 			wave::_wave::RawFormatChunk* rawFormatChunk = (wave::_wave::RawFormatChunk*) chunk.data.data();
-			FMTSTREAM_VERIFY((rawFormatChunk->formatTag == wave::Format::PCM && chunk.data.size() == 16) || (chunk.data.size() == 18 + rawFormatChunk->extSize), WaveBadFmtChunk, "WaveStream: Bad fmt chunk size: " + std::to_string(chunk.data.size()));
+			FMTSTREAM_VERIFY((rawFormatChunk->formatTag == wave::Format::PCM && chunk.data.size() == 16) || (chunk.data.size() == 18 + rawFormatChunk->extSize), WaveBadFmtChunk, "Bad fmt chunk size: " + std::to_string(chunk.data.size()));
 
 			header.formatTag = rawFormatChunk->formatTag;
 			header.channels = rawFormatChunk->channels;
@@ -209,7 +209,7 @@ namespace dsk
 			{
 				FMTSTREAM_VERIFY_STREAM_CALL(riffStream, setSourcePos, index["fact"]);
 				FMTSTREAM_VERIFY_STREAM_CALL(riffStream, readChunk, chunk);
-				FMTSTREAM_VERIFY(chunk.data.size() == 4, WaveBadFactChunk, "WaveStream: Bad fact chunk size. Expected 4, got " + std::to_string(chunk.data.size()));
+				FMTSTREAM_VERIFY(chunk.data.size() == 4, WaveBadFactChunk, "Bad fact chunk size. Expected 4, got " + std::to_string(chunk.data.size()));
 				header.blockCount = *reinterpret_cast<uint32_t*>(chunk.data.data());
 			}
 
@@ -217,7 +217,7 @@ namespace dsk
 
 			// Go to "data" chunk and read size to compute sample block count
 
-			FMTSTREAM_VERIFY(header.isValid(), WaveInvalidHeader, "WaveStream: Parse of header succeeded but for some reason the header is invalid.");
+			FMTSTREAM_VERIFY(header.isValid(), WaveInvalidHeader, "Parse of header succeeded but for some reason the header is invalid.");
 
 			FMTSTREAM_VERIFY_STREAM_CALL(riffStream, setSourcePos, index["data"]);
 			FMTSTREAM_VERIFY_STREAM_CALL(riffStream, readChunkHeader, chunkHeader);
@@ -263,10 +263,10 @@ namespace dsk
 		{
 			assert(file.isValid());
 
-			FMTSTREAM_BEGIN_WRITE();
+			FMTSTREAM_BEGIN_WRITE_FUNC("WaveStream::writeFile(const wave::File& file)");
 
 			FMTSTREAM_VERIFY_CALL(writeHeader, file.header);
-			FMTSTREAM_VERIFY_CALL(streamWrite, file.rawSamples.data(), file.rawSamples.size());
+			FMTSTREAM_WRITE(file.rawSamples.data(), file.rawSamples.size());
 
 			return error;
 		}
@@ -275,7 +275,7 @@ namespace dsk
 		{
 			assert(header.isValid());
 
-			FMTSTREAM_BEGIN_WRITE();
+			FMTSTREAM_BEGIN_WRITE_FUNC("WaveStream::writeHeader(const wave::Header& header)");
 
 			RiffStream riffStream;
 			FMTSTREAM_VERIFY_STREAM_CALL(riffStream, setDestination, stream);

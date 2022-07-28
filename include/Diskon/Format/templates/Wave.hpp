@@ -245,10 +245,10 @@ namespace dsk
 		{
 			assert(header.isValid());
 
-			FMTSTREAM_BEGIN_READ();
+			FMTSTREAM_BEGIN_READ_FUNC("WaveStream::_readSampleBlock(const wave::Header& header, TTo* sampleBlock)");
 
 			char* buffer = (char*) alloca(header.blockAlign);
-			FMTSTREAM_VERIFY(stream.read(buffer, header.blockAlign), InvalidStream, "WaveStream: Error while reading sample block.");
+			FMTSTREAM_READ(buffer, header.blockAlign);
 
 			wave::File::castFromRawSamples<TTo>(header, buffer, sampleBlock, 0, 1, header.channels);
 
@@ -260,12 +260,12 @@ namespace dsk
 		{
 			assert(header.isValid());
 
-			FMTSTREAM_BEGIN_WRITE();
+			FMTSTREAM_BEGIN_WRITE_FUNC("WaveStream::_writeSampleBlock(const wave::Header& header, const TFrom* sampleBlock)");
 
 			char* buffer = (char*) alloca(header.blockAlign);
 			wave::File::castToRawSamples<TFrom>(header, buffer, sampleBlock, 0, 1, header.channels);
 
-			FMTSTREAM_VERIFY(stream.write(buffer, header.blockAlign), InvalidStream, "WaveStream: Error while writing sample block.");
+			FMTSTREAM_WRITE(buffer, header.blockAlign);
 
 			return error;
 		}
