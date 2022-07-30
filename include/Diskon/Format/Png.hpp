@@ -32,6 +32,13 @@ namespace dsk
 				InterlaceMethod interlaceMethod;
 			};
 
+			struct TransparencyData
+			{
+				std::vector<uint8_t> palette;
+				std::array<uint16_t, 3> colorMask;
+				uint16_t greyMask;
+			};
+
 			struct ColorSpace
 			{
 				std::array<float, 2> whitePoint;
@@ -51,6 +58,8 @@ namespace dsk
 			struct Header
 			{
 				ImageStructure imageStructure;
+				std::vector<std::array<uint8_t, 3>> palette;
+				std::optional<TransparencyData> transparency;
 				std::optional<ColorSpace> colorSpace;
 				std::optional<float> gamma;
 				// TODO: ICC Profile
@@ -60,6 +69,8 @@ namespace dsk
 			struct File
 			{
 				Header header;
+
+				std::vector<uint8_t> rawData;
 			};
 		}
 
@@ -85,6 +96,33 @@ namespace dsk
 				const FormatError& writeSRBGIntent(const png::SRGBIntent& sRGBIntent);
 
 				~PngStream() = default;
+
+			private:
+
+				const FormatError& readChunkHeader(void* header);
+
+				const FormatError& readChunk_IHDR(png::Header& header, void* ptr);
+				const FormatError& readChunk_PLTE(png::Header& header, void* ptr);
+				const FormatError& readChunk_IDAT(std::vector<uint8_t>& data, void* ptr);
+				const FormatError& readChunk_IEND(png::Header& header, void* ptr);
+				const FormatError& readChunk_tRNS(png::Header& header, void* ptr);
+				const FormatError& readChunk_cHRM(png::Header& header, void* ptr);
+				const FormatError& readChunk_gAMA(png::Header& header, void* ptr);
+				// const FormatError& readChunk_iCCP()
+				// const FormatError& readChunk_sBIT()
+				const FormatError& readChunk_sRGB(png::Header& header, void* ptr);
+				// const FormatError& readChunk_tEXT()
+				// const FormatError& readChunk_zTXt()
+				// const FormatError& readChunk_iTXt()
+				// const FormatError& readChunk_bKGD()
+				// const FormatError& readChunk_hIST()
+				// const FormatError& readChunk_pHYs()
+				// const FormatError& readChunk_sPLT()
+				// const FormatError& readChunk_tIME()
+
+				const FormatError& readAndCheckChunkCrc(void* ptr);
+
+				const FormatError& checkChunksFound(const std::vector<uint32_t>& chunksFound);
 		};
 	}
 }

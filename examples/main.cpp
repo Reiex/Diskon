@@ -46,17 +46,17 @@ void xmlExample()
 
 void pngExample()
 {
-	// dsk::fmt::PngStream pngStream;
-	// pngStream.setSource("build/input_test.png");
-	// 
-	// dsk::fmt::png::File pngFile;
-	// pngStream.readFile(pngFile);
+	dsk::fmt::PngStream pngStream;
+	pngStream.setSource("build/input_test.png");
+	
+	dsk::fmt::png::File pngFile;
+	pngStream.readFile(pngFile);
 }
 
 int main()
 {
-	waveExample();
-	xmlExample();
+	// waveExample();
+	// xmlExample();
 	pngExample();
 
  	return 0;

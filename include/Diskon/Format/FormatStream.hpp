@@ -38,6 +38,7 @@ namespace dsk
 				PngInvalidChunkType,
 				PngInvalidChunkSize,
 				PngInvalidChunkContent,
+				PngInvalidChunkCRC,
 
 				// Riff
 

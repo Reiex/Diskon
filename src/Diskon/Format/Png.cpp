@@ -1,139 +1,180 @@
 #include <Diskon/Format/Format.hpp>
 
-/*
+
 namespace dsk
 {
 	namespace fmt
 	{
 		namespace
 		{
-			#pragma pack(push, 1)
-
 			struct ChunkHeader
 			{
 				uint32_t length;
 				char type[4];
 			};
+		}
 
-			struct ChunkFooter
+		PngStream::PngStream() : FormatStream(std::endian::big)
+		{
+		}
+
+		const FormatError& PngStream::readFile(png::File& file)
+		{
+			FMTSTREAM_BEGIN_READ_FUNC("PngStream::readFile(png::File& file)");
+
+			FMTSTREAM_VERIFY_CALL(readHeader, file.header);
+
+			return error;
+		}
+
+		const FormatError& PngStream::readHeader(png::Header& header)
+		{
+			FMTSTREAM_BEGIN_READ_FUNC("PngStream::readHeader(png::Header& header)");
+
+			char buffer[8];
+
+			ChunkHeader chunkHeader;
+			void* chunk = nullptr;
+
+			// Read PNG signature
+
+			FMTSTREAM_READ(buffer, 8);
+			FMTSTREAM_VERIFY(std::equal(buffer, buffer + 8, "\x89PNG\r\n\x1A\n"), PngInvalidSignature, "Invalid PNG signature.");
+
+			// Load IHDR chunk
+
+			FMTSTREAM_VERIFY_CALL(readChunkHeader, &chunkHeader);
+			FMTSTREAM_VERIFY(std::equal(chunkHeader.type, chunkHeader.type + 4, "IHDR"), PngInvalidChunkType, "Expected first chunk to be 'IHDR'. Instead, got '" + std::string(chunkHeader.type, 4) + "'.");
+			FMTSTREAM_VERIFY_CALL(readChunk_IHDR, header, &chunkHeader);
+			FMTSTREAM_VERIFY_CALL(readAndCheckChunkCrc, &chunkHeader);
+
+			// Load all chunks (except IDAT) until IEND
+
+			std::vector<uint32_t> chunksFound = { 0x49484452 };	// IHDR
+			std::streampos firstIdatChunk = -1;
+
+			FMTSTREAM_VERIFY_CALL(readChunkHeader, &chunkHeader);
+			while (!std::equal(chunkHeader.type, chunkHeader.type + 4, "IEND"))
 			{
-				uint32_t crc;
-			};
-
-			// Critical chunks
-
-			struct Chunk_IHDR
-			{
-				ChunkHeader header;
-
-				uint32_t width;
-				uint32_t height;
-				uint8_t bitDepth;
-				uint8_t colorType;
-				uint8_t compressionMethod;
-				uint8_t filterMethod;
-				uint8_t interlaceMethod;
-
-				ChunkFooter footer;
-			};
-
-			struct Chunk_PLTE
-			{
-				ChunkHeader header;
-
-				std::vector<std::array<uint8_t, 3>> palette;
-
-				ChunkFooter footer;
-			};
-
-			struct Chunk_IDAT
-			{
-				ChunkHeader header;
-
-				std::vector<uint8_t> data;
-
-				ChunkFooter footer;
-			};
-
-			struct Chunk_IEND
-			{
-				ChunkHeader header;
-				ChunkFooter footer;
-			};
-
-			// Ancillary chunks
-
-			struct Chunk_tRNS
-			{
-				ChunkHeader header;
-
-				union
+				uint32_t chunkType = *reinterpret_cast<const uint32_t*>(chunkHeader.type);
+				if (std::endian::native == std::endian::little)
 				{
-					uint16_t grayMask;
-					struct { uint16_t r, g, b; } rgbMask;
-					uint8_t paletteAlpha[256];
-				};
-
-				ChunkFooter footer;
-			};
-
-			struct Chunk_cHRM
-			{
-				ChunkHeader header;
-
-				uint32_t xWhitePoint;
-				uint32_t yWhitePoint;
-				uint32_t xRedPoint;
-				uint32_t yRedPoint;
-				uint32_t xGreenPoint;
-				uint32_t yGreenPoint;
-				uint32_t xBluePoint;
-				uint32_t yBluePoint;
-
-				ChunkFooter footer;
-			};
-
-			struct Chunk_gAMA
-			{
-				ChunkHeader header;
-
-				uint32_t gamma;
-
-				ChunkFooter footer;
-			};
-
-			// TODO: Chunk_iCCP
-
-			// Chunk sBIT is ignored.
-
-			struct Chunk_sRGB
-			{
-				ChunkHeader header;
-
-				uint8_t renderingIntent;
-
-				ChunkFooter footer;
-			};
-
-			#pragma pack(pop)
-
-			// Functions
-
-			const FormatError& readChunkHeader(std::istream& stream, FormatError& error, ChunkHeader& chunkHeader)
-			{
-				FMTSTREAM_VERIFY(stream.read(reinterpret_cast<char*>(&chunkHeader), sizeof(ChunkHeader)), InvalidStream, "PngStream: Error while reading chunk header.");
-
-				if constexpr (std::endian::native == std::endian::little)
-				{
-					chunkHeader.length = std::byteswap(chunkHeader.length);
+					chunkType = std::byteswap(chunkType);
 				}
 
-				FMTSTREAM_VERIFY(chunkHeader.length < (1ULL << 31) - 1, PngInvalidChunkSize, "PngStream: Expected chunk size to be less than 2**31 - 1. Instead, got " + std::to_string(chunkHeader.length) + ".");
+				switch (chunkType)
+				{
+					case 0x504C5445:	// PLTE
+					{
+						FMTSTREAM_VERIFY_CALL(readChunk_PLTE, header, &chunkHeader);
+						break;
+					}
+					case 0x74524E53:	// tRNS
+					{
+						FMTSTREAM_VERIFY_CALL(readChunk_tRNS, header, &chunkHeader);
+						break;
+					}
+					case 0x6348524D:	// cHRM
+					{
+						FMTSTREAM_VERIFY_CALL(readChunk_cHRM, header, &chunkHeader);
+						break;
+					}
+					case 0x67414D41:	// gAMA
+					{
+						FMTSTREAM_VERIFY_CALL(readChunk_gAMA, header, &chunkHeader);
+						break;
+					}
+					case 0x73524742:	// sRGB
+					{
+						FMTSTREAM_VERIFY_CALL(readChunk_sRGB, header, &chunkHeader);
+						break;
+					}
+					default:	// Unrecognized or ignored chunks
+					{
+						FMTSTREAM_VERIFY_CALL(setSourcePos, getSourcePos() + std::streamoff(chunkHeader.length));
+						break;
+					}
+				}
 
-				return error;
+				FMTSTREAM_VERIFY_CALL(readAndCheckChunkCrc, &chunkHeader);
+
+				chunksFound.push_back(chunkType);
+
+				FMTSTREAM_VERIFY_CALL(readChunkHeader, &chunkHeader);
 			}
 
-			bool isColorTypeBitDepthAllowed(uint8_t colorType, uint8_t bitDepth)
+			chunksFound.push_back(0x49454E44);	// IEND
+
+			// TODO: Check there is a PLTE if color type == 3
+			// TODO: Check IDAT chunks appear consecutively
+			// TODO: Check cHRM and gAMA if there is sRGB
+
+			// Load IEND
+
+			// Go to first IDAT chunk
+
+			return error;
+		}
+
+		const FormatError& PngStream::writeFile(const png::File& file)
+		{
+			FMTSTREAM_BEGIN_WRITE_FUNC("PngStream::writeFile(const png::File& file)");
+
+			return error;
+		}
+
+		const FormatError& PngStream::writeHeader(const png::Header& header)
+		{
+			FMTSTREAM_BEGIN_WRITE_FUNC("PngStream::writeHeader(const png::Header& header)");
+
+			return error;
+		}
+
+		const FormatError& PngStream::writeImageStructure(const png::ImageStructure& imageStructure)
+		{
+			FMTSTREAM_BEGIN_WRITE_FUNC("PngStream::writeImageStructure(const png::ImageStructure& imageStructure)");
+
+			return error;
+		}
+
+		const FormatError& PngStream::writeColorSpace(const png::ColorSpace& colorSpace)
+		{
+			FMTSTREAM_BEGIN_WRITE_FUNC("PngStream::writeColorSpace(const png::ColorSpace& colorSpace)");
+
+			return error;
+		}
+
+		const FormatError& PngStream::writeGamma(float gamma)
+		{
+			FMTSTREAM_BEGIN_WRITE_FUNC("PngStream::writeGamma(float gamma)");
+
+			return error;
+		}
+
+		const FormatError& PngStream::writeSRBGIntent(const png::SRGBIntent& sRGBIntent)
+		{
+			FMTSTREAM_BEGIN_WRITE_FUNC("PngStream::writeSRBGIntent(const png::SRGBIntent& sRGBIntent)");
+
+			return error;
+		}
+
+		const FormatError& PngStream::readChunkHeader(void* header)
+		{
+			FMTSTREAM_READ_FUNC("PngStream::readChunkHeader(void* header)");
+
+			ChunkHeader* chunkHeader = reinterpret_cast<ChunkHeader*>(header);
+
+			FMTSTREAM_READ(chunkHeader->length);
+			FMTSTREAM_READ(chunkHeader->type, 4);
+
+			FMTSTREAM_VERIFY(chunkHeader->length < (1ULL << 31) - 1, PngInvalidChunkSize, "Expected chunk size to be less than 2**31 - 1. Instead, got " + std::to_string(chunkHeader->length) + ".");
+
+			return error;
+		}
+
+		namespace
+		{
+			bool isBitDepthColorTypeAllowed(uint8_t bitDepth, uint8_t colorType)
 			{
 				switch (colorType)
 				{
@@ -149,319 +190,276 @@ namespace dsk
 						return false;
 				}
 			}
-
-			const FormatError& readChunkData(std::istream& stream, FormatError& error, const ChunkHeader& chunkHeader, void*& chunk)
-			{
-				if (chunk)
-				{
-					delete chunk;
-					chunk = nullptr;
-				}
-
-				constexpr uint32_t offset = sizeof(ChunkHeader);
-
-				const uint8_t* crcStart;
-
-				uint32_t chunkType = *reinterpret_cast<const uint32_t*>(chunkHeader.type);
-				if constexpr (std::endian::native == std::endian::little)
-				{
-					chunkType = std::byteswap(chunkType);
-				}
-
-				switch (chunkType)
-				{
-					// IHDR
-
-					case 0x49484452:
-					{
-						FMTSTREAM_VERIFY(chunkHeader.length == 13, PngInvalidChunkSize, "PngStream: Expected IHDR chunk size to be 13. Instead, got " + std::to_string(chunkHeader.length) + ".");
-
-						chunk = new Chunk_IHDR;
-						Chunk_IHDR* chunk_IHDR = reinterpret_cast<Chunk_IHDR*>(chunk);
-						chunk_IHDR->header = chunkHeader;
-						crcStart = reinterpret_cast<const uint8_t*>(&chunk_IHDR->header.type);
-						constexpr uint32_t size = sizeof(Chunk_IHDR) - offset;
-						FMTSTREAM_VERIFY(stream.read(reinterpret_cast<char*>(chunk) + offset, size), InvalidStream, "PngStream: Error while reading IHDR chunk.");
-
-						if constexpr (std::endian::native == std::endian::little)
-						{
-							chunk_IHDR->width = std::byteswap(chunk_IHDR->width);
-							chunk_IHDR->height = std::byteswap(chunk_IHDR->height);
-						}
-
-						FMTSTREAM_VERIFY(chunk_IHDR->width != 0, PngInvalidChunkContent, "PngStream: Width of image cannot be 0.");
-						FMTSTREAM_VERIFY(chunk_IHDR->height != 0, PngInvalidChunkContent, "PngStream: Height of image cannot be 0.");
-						FMTSTREAM_VERIFY(isColorTypeBitDepthAllowed(chunk_IHDR->colorType, chunk_IHDR->bitDepth), PngInvalidChunkContent, "PngStream: Combination of color type and bit depth not allowed. Combination: {" + std::to_string(chunk_IHDR->colorType) + ", " + std::to_string(chunk_IHDR->bitDepth) + "}.");
-						FMTSTREAM_VERIFY(chunk_IHDR->compressionMethod == 0, PngInvalidChunkContent, "PngStream: Expected compression method to be 0. Instead, got " + std::to_string(chunk_IHDR->compressionMethod) + ".");
-						FMTSTREAM_VERIFY(chunk_IHDR->filterMethod == 0, PngInvalidChunkContent, "PngStream: Expected filter method to be 0. Instead, got " + std::to_string(chunk_IHDR->filterMethod) + ".");
-						FMTSTREAM_VERIFY(chunk_IHDR->interlaceMethod <= 1, PngInvalidChunkContent, "PngStream: Expected interlace method to be 0 or 1. Instead, got " + std::to_string(chunk_IHDR->interlaceMethod) + ".");
-
-						break;
-					}
-
-					// PLTE
-
-					case 0x504C5445:
-					{
-						FMTSTREAM_VERIFY(chunkHeader.length % 3 == 0, PngInvalidChunkSize, "PngStream: Expected PLTE chunk size to be a multiple of 3. Instead, got " + std::to_string(chunkHeader.length) + ".");
-
-						chunk = new Chunk_PLTE;
-						Chunk_PLTE* chunk_PLTE = reinterpret_cast<Chunk_PLTE*>(chunk);
-						chunk_PLTE->header = chunkHeader;
-						crcStart = reinterpret_cast<const uint8_t*>(&chunk_PLTE->header.type);
-
-						uint8_t buffer[3];
-						for (uint32_t i = 0; i < chunkHeader.length; i += 3)
-						{
-							FMTSTREAM_VERIFY(stream.read(reinterpret_cast<char*>(buffer), 3), InvalidStream, "PngStream: Error while reading PLTE entry.");
-							chunk_PLTE->palette.push_back({ buffer[0], buffer[1], buffer[2] });
-						}
-
-						FMTSTREAM_VERIFY(stream.read(reinterpret_cast<char*>(&chunk_PLTE->footer), sizeof(ChunkFooter)), InvalidStream, "PngStream: Error while reading PLTE footer.");
-
-						break;
-					}
-
-					// IDAT
-
-					case 0x49444154:
-					{
-						chunk = new Chunk_IDAT;
-						Chunk_IDAT* chunk_IDAT = reinterpret_cast<Chunk_IDAT*>(chunk);
-						chunk_IDAT->header = chunkHeader;
-						crcStart = reinterpret_cast<const uint8_t*>(&chunk_IDAT->header.type);
-
-						chunk_IDAT->data.resize(chunkHeader.length);
-						FMTSTREAM_VERIFY(stream.read(reinterpret_cast<char*>(chunk_IDAT->data.data()), chunkHeader.length), InvalidStream, "PngStream: Error while reading IDAT chunk data.");
-						FMTSTREAM_VERIFY(stream.read(reinterpret_cast<char*>(&chunk_IDAT->footer), sizeof(ChunkFooter)), InvalidStream, "PngStream: Error while reading IDAT footer.");
-
-						break;
-					}
-
-					// IEND
-
-					case 0x49454E44:
-					{
-						FMTSTREAM_VERIFY(chunkHeader.length == 0, PngInvalidChunkSize, "PngStream: Expected IEND chunk size to be 0. Instead, got " + std::to_string(chunkHeader.length) + ".");
-						
-						chunk = new Chunk_IEND;
-						Chunk_IEND* chunk_IEND = reinterpret_cast<Chunk_IEND*>(chunk);
-						chunk_IEND->header = chunkHeader;
-						crcStart = reinterpret_cast<const uint8_t*>(&chunk_IEND->header.type);
-						constexpr uint32_t size = sizeof(Chunk_IEND) - offset;
-						FMTSTREAM_VERIFY(stream.read(reinterpret_cast<char*>(chunk) + offset, size), InvalidStream, "PngStream: Error while reading IEND chunk.");
-						
-						break;
-					}
-
-					// tRNS
-
-					case 0x74524E53:
-					{
-						chunk = new Chunk_tRNS;
-						Chunk_tRNS* chunk_tRNS = reinterpret_cast<Chunk_tRNS*>(chunk);
-						chunk_tRNS->header = chunkHeader;
-						crcStart = reinterpret_cast<const uint8_t*>(&chunk_tRNS->header.type);
-						const uint32_t size = chunkHeader.length + sizeof(ChunkFooter);
-						FMTSTREAM_VERIFY(stream.read(reinterpret_cast<char*>(chunk) + offset, size), InvalidStream, "PngStream: Error while reading tRNS chunk.");
-
-						// TODO: If type 0/2, byteswap
-
-						break;
-					}
-
-					// cHRM
-
-					case 0x6348524D:
-					{
-						FMTSTREAM_VERIFY(chunkHeader.length == 32, PngInvalidChunkSize, "PngStream: Expected cHRM chunk size to be 32. Instead, got " + std::to_string(chunkHeader.length) + ".");
-
-						chunk = new Chunk_cHRM;
-						Chunk_cHRM* chunk_cHRM = reinterpret_cast<Chunk_cHRM*>(chunk);
-						chunk_cHRM->header = chunkHeader;
-						crcStart = reinterpret_cast<const uint8_t*>(&chunk_cHRM->header.type);
-						constexpr uint32_t size = sizeof(Chunk_cHRM) - offset;
-						FMTSTREAM_VERIFY(stream.read(reinterpret_cast<char*>(chunk) + offset, size), InvalidStream, "PngStream: Error while reading cHRM chunk.");
-
-						if constexpr (std::endian::native == std::endian::little)
-						{
-							chunk_cHRM->xWhitePoint = std::byteswap(chunk_cHRM->xWhitePoint);
-							chunk_cHRM->yWhitePoint = std::byteswap(chunk_cHRM->yWhitePoint);
-							chunk_cHRM->xRedPoint = std::byteswap(chunk_cHRM->xRedPoint);
-							chunk_cHRM->yRedPoint = std::byteswap(chunk_cHRM->yRedPoint);
-							chunk_cHRM->xGreenPoint = std::byteswap(chunk_cHRM->xGreenPoint);
-							chunk_cHRM->yGreenPoint = std::byteswap(chunk_cHRM->yGreenPoint);
-							chunk_cHRM->xBluePoint = std::byteswap(chunk_cHRM->xBluePoint);
-							chunk_cHRM->yBluePoint = std::byteswap(chunk_cHRM->yBluePoint);
-						}
-
-						break;
-					}
-
-					// gAMA
-
-					case 0x67414D41:
-					{
-						FMTSTREAM_VERIFY(chunkHeader.length == 4, PngInvalidChunkSize, "PngStream: Expected gAMA chunk size to be 4. Instead, got " + std::to_string(chunkHeader.length) + ".");
-
-						chunk = new Chunk_gAMA;
-						Chunk_gAMA* chunk_gAMA = reinterpret_cast<Chunk_gAMA*>(chunk);
-						chunk_gAMA->header = chunkHeader;
-						crcStart = reinterpret_cast<const uint8_t*>(&chunk_gAMA->header.type);
-						constexpr uint32_t size = sizeof(Chunk_gAMA) - offset;
-						FMTSTREAM_VERIFY(stream.read(reinterpret_cast<char*>(chunk) + offset, size), InvalidStream, "PngStream: Error while reading gAMA chunk.");
-
-						if constexpr (std::endian::native == std::endian::little)
-						{
-							chunk_gAMA->gamma = std::byteswap(chunk_gAMA->gamma);
-						}
-
-						break;
-					}
-
-					// sRGB
-
-					case 0x73524742:
-					{
-						FMTSTREAM_VERIFY(chunkHeader.length == 1, PngInvalidChunkSize, "PngStream: Expected sRGB chunk size to be 1. Instead, got " + std::to_string(chunkHeader.length) + ".");
-
-						chunk = new Chunk_sRGB;
-						Chunk_sRGB* chunk_sRGB = reinterpret_cast<Chunk_sRGB*>(chunk);
-						chunk_sRGB->header = chunkHeader;
-						crcStart = reinterpret_cast<const uint8_t*>(&chunk_sRGB->header.type);
-						constexpr uint32_t size = sizeof(Chunk_sRGB) - offset;
-						FMTSTREAM_VERIFY(stream.read(reinterpret_cast<char*>(chunk) + offset, size), InvalidStream, "PngStream: Error while reading sRGB chunk.");
-
-						FMTSTREAM_VERIFY(chunk_sRGB->renderingIntent <= 3, PngInvalidChunkContent, "PngStream: Error while reading sRGB rendering intent. Expected value in [0, 3]. Instead, got " + std::to_string(chunk_sRGB->renderingIntent) + ".");
-
-						break;
-					}
-
-					// Unrecognized header
-
-					default:
-					{
-						return error;
-					}
-				}
-
-				const uint32_t crcLength = chunkHeader.length + 4;
-				const uint32_t crcStored = *reinterpret_cast<const uint32_t*>(crcStart + crcLength);
-				// byteswap
-
-				// TODO: Check CRC
-
-				return error;
-			}
 		}
 
-		PngStream::PngStream() : FormatStream(std::endian::big)
+		const FormatError& PngStream::readChunk_IHDR(png::Header& header, void* ptr)
 		{
-		}
+			FMTSTREAM_READ_FUNC("PngStream::readChunk_IHDR(png::Header& header, void* ptr)");
 
-		const FormatError& PngStream::readFile(png::File& file)
-		{
-			FMTSTREAM_BEGIN_READ();
+			// Check chunk size
 
-			FMTSTREAM_VERIFY_CALL(readHeader, file.header);
+			ChunkHeader* chunkHeader = reinterpret_cast<ChunkHeader*>(ptr);
+			FMTSTREAM_VERIFY(chunkHeader->length == 13, PngInvalidChunkSize, "Expected IHDR chunk size to be 13. Instead, got " + std::to_string(chunkHeader->length) + ".");
+
+			// Load chunk
+
+			png::ImageStructure& imgStruct = header.imageStructure;
+			uint8_t buffer;
+
+			FMTSTREAM_READ(imgStruct.width);
+			FMTSTREAM_VERIFY(imgStruct.width != 0, PngInvalidChunkContent, "Image width cannot be 0.");
+
+			FMTSTREAM_READ(imgStruct.height);
+			FMTSTREAM_VERIFY(imgStruct.height != 0, PngInvalidChunkContent, "Image height cannot be 0.");
+
+			FMTSTREAM_READ(imgStruct.bitDepth);
+			FMTSTREAM_READ(buffer);
+			FMTSTREAM_VERIFY(isBitDepthColorTypeAllowed(imgStruct.bitDepth, buffer), PngInvalidChunkContent, "Invalid combination of bit depth and color type: (" + std::to_string(imgStruct.bitDepth) + ", " + std::to_string(static_cast<uint8_t>(imgStruct.colorType)) + ").");
+			imgStruct.colorType = static_cast<png::ColorType>(buffer);
+
+			FMTSTREAM_READ(buffer);
+			FMTSTREAM_VERIFY(buffer == 0, PngInvalidChunkContent, "Expected compression method to be 0. Instead, got " + std::to_string(buffer) + ".");
+
+			FMTSTREAM_READ(buffer);
+			FMTSTREAM_VERIFY(buffer == 0, PngInvalidChunkContent, "Expected filter method to be 0. Instead, got " + std::to_string(buffer) + ".");
+
+			FMTSTREAM_READ(buffer);
+			FMTSTREAM_VERIFY(buffer < 2, PngInvalidChunkContent, "Expected interlace method to be less than 2. Instead, got " + std::to_string(buffer) + ".");
+			imgStruct.interlaceMethod = static_cast<png::InterlaceMethod>(buffer);
 
 			return error;
 		}
 
-		const FormatError& PngStream::readHeader(png::Header& header)
+		const FormatError& PngStream::readChunk_PLTE(png::Header& header, void* ptr)
 		{
-			FMTSTREAM_BEGIN_READ();
+			FMTSTREAM_READ_FUNC("PngStream::readChunk_PLTE(png::Header& header, void* ptr)");
 
-			char buffer[8];
-			std::streampos firstIdatChunk = -1;
-			
-			ChunkHeader chunkHeader;
-			void* chunk = nullptr;
+			// Check chunk size and color type
 
-			// Read PNG signature
+			ChunkHeader* chunkHeader = reinterpret_cast<ChunkHeader*>(ptr);
+			FMTSTREAM_VERIFY(chunkHeader->length % 3 == 0, PngInvalidChunkSize, "Expected PLTE chunk to have a size multiple of 3. Instead, got " + std::to_string(chunkHeader->length) + ".");
 
-			FMTSTREAM_VERIFY(stream.read(buffer, 8), InvalidStream, "PngStream: Error while reading PNG signature.");
-			FMTSTREAM_VERIFY(std::equal(buffer, buffer + 8, "\x89PNG\r\n\x1A\n"), PngInvalidSignature, "PngStream: Invalid PNG signature.");
+			uint8_t colorType = static_cast<uint8_t>(header.imageStructure.colorType);
+			FMTSTREAM_VERIFY(colorType != 0 && colorType != 4, PngInvalidChunkType, "PLTE chunk cannot appear for images of color type " + std::to_string(colorType) + ".");
 
-			// Load IHDR chunk
+			// Load chunk
 
-			FMTSTREAM_VERIFY_CALL(readChunkHeader, stream, error, chunkHeader);
-			FMTSTREAM_VERIFY(std::equal(chunkHeader.type, chunkHeader.type + 4, "IHDR"), PngInvalidChunkType, "PngStream: Expected first chunk to be 'IHDR'. Instead, got '" + std::string(chunkHeader.type, 4) + "'.");
-			if (!readChunkData(stream, error, chunkHeader, chunk))
+			header.palette.resize(chunkHeader->length / 3);
+			for (std::array<uint8_t, 3>& color : header.palette)
 			{
-				delete chunk;
-				return error;
-			}
-			Chunk_IHDR* chunkIHDR = reinterpret_cast<Chunk_IHDR*>(chunk);
-
-			header.imageStructure.width = chunkIHDR->width;
-			header.imageStructure.height = chunkIHDR->height;
-			header.imageStructure.bitDepth = chunkIHDR->bitDepth;
-			header.imageStructure.colorType = static_cast<png::ColorType>(chunkIHDR->colorType);
-			header.imageStructure.interlaceMethod = static_cast<png::InterlaceMethod>(chunkIHDR->interlaceMethod);
-
-			// Load all chunks (except IDAT) until IEND
-
-			FMTSTREAM_VERIFY_CALL(readChunkHeader, stream, error, chunkHeader);
-			while (!std::equal(chunkHeader.type, chunkHeader.type + 4, "IEND"))
-			{
-				/*if (!readChunkData(stream, error, chunkHeader, chunk))
-				{
-					delete chunk;
-					return error;
-				}
-
-				FMTSTREAM_VERIFY_CALL(readChunkHeader, stream, error, chunkHeader);
+				FMTSTREAM_READ(color.data(), 3);
 			}
 
-			// Load IEND
+			return error;
+		}
 
-			// Go to first IDAT chunk
+		const FormatError& PngStream::readChunk_IDAT(std::vector<uint8_t>& data, void* ptr)
+		{
+			FMTSTREAM_READ_FUNC("PngStream::readChunk_IDAT(std::vector<uint8_t>& data, void* ptr)");
+
+			ChunkHeader* chunkHeader = reinterpret_cast<ChunkHeader*>(ptr);
+			const uint64_t oldSize = data.size();
+			data.resize(oldSize + chunkHeader->length);
+			FMTSTREAM_READ(data.data() + oldSize, chunkHeader->length);
 
 			return error;
 		}
 
-		const FormatError& PngStream::writeFile(const png::File& file)
+		const FormatError& PngStream::readChunk_IEND(png::Header& header, void* ptr)
 		{
-			FMTSTREAM_BEGIN_WRITE();
+			FMTSTREAM_READ_FUNC("PngStream::readChunk_IEND(png::Header& header, void* ptr)");
+
+			ChunkHeader* chunkHeader = reinterpret_cast<ChunkHeader*>(ptr);
+			FMTSTREAM_VERIFY(chunkHeader->length == 0, PngInvalidChunkSize, "Expected IEND chunk size to be 0. Instead, got " + std::to_string(chunkHeader->length) + ".");
 
 			return error;
 		}
 
-		const FormatError& PngStream::writeHeader(const png::Header& header)
+		const FormatError& PngStream::readChunk_tRNS(png::Header& header, void* ptr)
 		{
-			FMTSTREAM_BEGIN_WRITE();
+			FMTSTREAM_READ_FUNC("PngStream::readChunk_tRNS(png::Header& header, void* ptr)");
+
+			ChunkHeader* chunkHeader = reinterpret_cast<ChunkHeader*>(ptr);
+			const uint32_t maxMask = uint32_t(1) << header.imageStructure.bitDepth;
+			header.transparency = png::TransparencyData();
+
+			switch (header.imageStructure.colorType)
+			{
+				case png::ColorType::GreyScale:
+				{
+					FMTSTREAM_VERIFY(chunkHeader->length == 2, PngInvalidChunkSize, "Expected tRNS chunk with color type 0 to have a size of 2. Instead, got " + std::to_string(chunkHeader->length) + ".");
+					
+					FMTSTREAM_READ(header.transparency->greyMask);
+					FMTSTREAM_VERIFY(header.transparency->greyMask < maxMask, PngInvalidChunkContent, "Expected grey mask to be less that 2**bitDepth (" + std::to_string(maxMask) + "). Instead, got " + std::to_string(header.transparency->greyMask) + ".");
+					
+					break;
+				}
+				case png::ColorType::TrueColor:
+				{
+					FMTSTREAM_VERIFY(chunkHeader->length == 6, PngInvalidChunkSize, "Expected tRNS chunk with color type 2 to have a size of 6. Instead, got " + std::to_string(chunkHeader->length) + ".");
+					
+					FMTSTREAM_READ(header.transparency->colorMask.data(), 3);
+					FMTSTREAM_VERIFY(header.transparency->colorMask[0] < maxMask, PngInvalidChunkContent, "Expected color mask red channel to be less that 2**bitDepth (" + std::to_string(maxMask) + "). Instead, got " + std::to_string(header.transparency->colorMask[0]) + ".");
+					FMTSTREAM_VERIFY(header.transparency->colorMask[1] < maxMask, PngInvalidChunkContent, "Expected color mask green channel to be less that 2**bitDepth (" + std::to_string(maxMask) + "). Instead, got " + std::to_string(header.transparency->colorMask[1]) + ".");
+					FMTSTREAM_VERIFY(header.transparency->colorMask[2] < maxMask, PngInvalidChunkContent, "Expected color mask blue channel to be less that 2**bitDepth (" + std::to_string(maxMask) + "). Instead, got " + std::to_string(header.transparency->colorMask[2]) + ".");
+					
+					break;
+				}
+				case png::ColorType::IndexedColor:
+				{
+					FMTSTREAM_VERIFY(chunkHeader->length == header.palette.size(), PngInvalidChunkSize, "Expected tRNS chunk with color type 3 to have the same size as the palette (" + std::to_string(header.palette.size()) + "). Instead, got " + std::to_string(chunkHeader->length) + ".");
+					
+					header.transparency->palette.resize(header.palette.size());
+					FMTSTREAM_READ(header.transparency->palette.data(), header.palette.size());
+					
+					break;
+				}
+				default:
+				{
+					FMTSTREAM_VERIFY(false, PngInvalidChunkType, "tRNS chunk cannot appear for images of color type " + std::to_string(static_cast<uint8_t>(header.imageStructure.colorType)) + ".");
+				}
+			}
 
 			return error;
 		}
 
-		const FormatError& PngStream::writeImageStructure(const png::ImageStructure& imageStructure)
+		const FormatError& PngStream::readChunk_cHRM(png::Header& header, void* ptr)
 		{
-			FMTSTREAM_BEGIN_WRITE();
+			FMTSTREAM_READ_FUNC("PngStream::readChunk_cHRM(png::Header& header, void* ptr)");
+
+			// Check chunk size
+
+			ChunkHeader* chunkHeader = reinterpret_cast<ChunkHeader*>(ptr);
+			FMTSTREAM_VERIFY(chunkHeader->length == 32, PngInvalidChunkSize, "Expected cHRM chunk size to be 32. Instead, got " + std::to_string(chunkHeader->length) + ".");
+
+			// Load chunk
+
+			uint32_t points[8];
+			FMTSTREAM_READ(points, 8);
+
+			header.colorSpace = png::ColorSpace();
+			header.colorSpace->whitePoint[0] = points[0] / 100000.f;
+			header.colorSpace->whitePoint[1] = points[1] / 100000.f;
+			header.colorSpace->redPoint[0] = points[2] / 100000.f;
+			header.colorSpace->redPoint[1] = points[3] / 100000.f;
+			header.colorSpace->greenPoint[0] = points[4] / 100000.f;
+			header.colorSpace->greenPoint[1] = points[5] / 100000.f;
+			header.colorSpace->bluePoint[0] = points[6] / 100000.f;
+			header.colorSpace->bluePoint[1] = points[7] / 100000.f;
 
 			return error;
 		}
 
-		const FormatError& PngStream::writeColorSpace(const png::ColorSpace& colorSpace)
+		const FormatError& PngStream::readChunk_gAMA(png::Header& header, void* ptr)
 		{
-			FMTSTREAM_BEGIN_WRITE();
+			FMTSTREAM_READ_FUNC("PngStream::readChunk_gAMA(png::Header& header, void* ptr)");
+
+			// Check chunk size
+
+			ChunkHeader* chunkHeader = reinterpret_cast<ChunkHeader*>(ptr);
+			FMTSTREAM_VERIFY(chunkHeader->length == 4, PngInvalidChunkSize, "Expected gAMA chunk size to be 4. Instead, got " + std::to_string(chunkHeader->length) + ".");
+
+			// Load chunk
+
+			uint32_t gamma;
+			FMTSTREAM_READ(gamma);
+
+			header.gamma = gamma / 100000.f;
 
 			return error;
 		}
 
-		const FormatError& PngStream::writeGamma(float gamma)
+		const FormatError& PngStream::readChunk_sRGB(png::Header& header, void* ptr)
 		{
-			FMTSTREAM_BEGIN_WRITE();
+			FMTSTREAM_READ_FUNC("PngStream::readChunk_sRGB(png::Header& header, void* ptr)");
+
+			// Check chunk size
+
+			ChunkHeader* chunkHeader = reinterpret_cast<ChunkHeader*>(ptr);
+			FMTSTREAM_VERIFY(chunkHeader->length == 1, PngInvalidChunkSize, "Expected sRGB chunk size to be 1. Instead, got " + std::to_string(chunkHeader->length) + ".");
+
+			// Load chunk
+
+			uint8_t sRGBIntent;
+			FMTSTREAM_READ(sRGBIntent);
+			FMTSTREAM_VERIFY(sRGBIntent < 4, PngInvalidChunkContent, "Expected sRGB intent to be less than 4. Instead, got " + std::to_string(sRGBIntent) + ".");
+
+			header.sRGBIntent = static_cast<png::SRGBIntent>(sRGBIntent);
 
 			return error;
 		}
 
-		const FormatError& PngStream::writeSRBGIntent(const png::SRGBIntent& sRGBIntent)
+		namespace
 		{
-			FMTSTREAM_BEGIN_WRITE();
+			class CrcTable
+			{
+				public:
+
+					constexpr CrcTable()
+					{
+						for (uint32_t n = 0; n < 256; ++n)
+						{
+							values[n] = n;
+							for (uint8_t k = 0; k < 8; ++k)
+							{
+								if (values[n] & 1)
+								{
+									values[n] = 0xEDB88320 ^ (values[n] >> 1);
+								}
+								else
+								{
+									values[n] >>= 1;
+								}
+							}
+						}
+					}
+
+					uint32_t computeCrc(const uint8_t* buffer, uint64_t size) const
+					{
+						uint32_t crc = 0xFFFFFFFF;
+
+						const uint8_t* const bufferEnd = buffer + size;
+						for (; buffer != bufferEnd; ++buffer)
+						{
+							crc = values[(crc ^ *buffer) & 0xFF] ^ (crc >> 8);
+						}
+
+						return ~crc;
+					}
+
+				private:
+
+					uint32_t values[256];
+			};
+
+			constexpr CrcTable crcTable;
+		}
+
+		const FormatError& PngStream::readAndCheckChunkCrc(void* ptr)
+		{
+			FMTSTREAM_READ_FUNC("PngStream::readAndCheckChunkCrc(void* ptr)");
+
+			ChunkHeader* chunkHeader = reinterpret_cast<ChunkHeader*>(ptr);
+			const uint32_t crcLength = chunkHeader->length + 4;
+			uint8_t* buffer = new uint8_t[crcLength];
+			FMTSTREAM_VERIFY_CALL(setSourcePos, getSourcePos() - std::streamoff(crcLength));
+			FMTSTREAM_READ(buffer, crcLength);
+
+			uint32_t computedCrc = crcTable.computeCrc(buffer, crcLength);
+			delete[] buffer;
+
+			uint32_t storedCrc;
+			FMTSTREAM_READ(storedCrc);
+			FMTSTREAM_VERIFY(computedCrc == storedCrc, PngInvalidChunkCRC, "Bad CRC for chunk '" + std::string(chunkHeader->type, 4) + "'.");
+
+			return error;
+		}
+	
+		const FormatError& PngStream::checkChunksFound(const std::vector<uint32_t>& chunksFound)
+		{
+			FMTSTREAM_READ_FUNC("PngStream::checkChunksFound(const std::vector<uint32_t>& chunksFound)");
 
 			return error;
 		}
 	}
 }
-*/
