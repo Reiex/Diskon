@@ -48,9 +48,11 @@ void pngExample()
 {
 	dsk::fmt::PngStream pngStream;
 	pngStream.setSource("build/input_test.png");
+	pngStream.setDestination("build/output_test.png");
 	
 	dsk::fmt::png::File pngFile;
 	pngStream.readFile(pngFile);
+	pngStream.writeFile(pngFile);
 }
 
 int main()

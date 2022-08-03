@@ -1,6 +1,5 @@
 #include <Diskon/Format/Format.hpp>
 
-
 namespace dsk
 {
 	namespace fmt
@@ -12,6 +11,90 @@ namespace dsk
 				uint32_t length;
 				char type[4];
 			};
+
+			class CrcTable
+			{
+				public:
+
+					constexpr CrcTable()
+					{
+						for (uint32_t n = 0; n < 256; ++n)
+						{
+							values[n] = n;
+							for (uint8_t k = 0; k < 8; ++k)
+							{
+								if (values[n] & 1)
+								{
+									values[n] = 0xEDB88320 ^ (values[n] >> 1);
+								}
+								else
+								{
+									values[n] >>= 1;
+								}
+							}
+						}
+					}
+
+					uint32_t computeCrc(const uint8_t* buffer, uint64_t size) const
+					{
+						uint32_t crc = 0xFFFFFFFF;
+
+						const uint8_t* const bufferEnd = buffer + size;
+						for (; buffer != bufferEnd; ++buffer)
+						{
+							crc = values[(crc ^ *buffer) & 0xFF] ^ (crc >> 8);
+						}
+
+						return ~crc;
+					}
+
+				private:
+
+					uint32_t values[256];
+			};
+
+			constexpr CrcTable crcTable;
+		}
+
+		namespace png
+		{
+			FormatError File::getSamples(std::vector<uint8_t>& samples) const
+			{
+				FormatError error;
+				samples.clear();
+
+				// TODO...
+
+				return error;
+			}
+
+			FormatError File::setSamples(const std::vector<uint8_t>& samples)
+			{
+				FormatError error;
+				rawData.clear();
+
+				// TODO: Interlacing
+				// TODO: Filtering
+
+				zlib::File zlibFile;
+				zlibFile.header.compressionMethod = zlib::CompressionMethod::Deflate;
+				zlibFile.header.compressionInfo = 7;
+				zlibFile.header.compressionLevel = zlib::CompressionLevel::DefaultAlgorithm;
+				zlibFile.data.resize(header.imageStructure.height * (header.imageStructure.width * header.imageStructure.bitDepth * 4 /* colorType */ + 1));
+
+				std::stringstream stream(std::ios::binary);
+
+				ZlibStream zlibStream;
+				zlibStream.setDestination(stream);
+				zlibStream.writeFile(zlibFile);
+
+				stream.flush();
+
+				rawData.resize(stream.tellp());
+				stream.read((char*) rawData.data(), rawData.size());
+
+				return error;
+			}
 		}
 
 		PngStream::PngStream() : FormatStream(std::endian::big)
@@ -23,6 +106,7 @@ namespace dsk
 			FMTSTREAM_BEGIN_READ_FUNC("PngStream::readFile(png::File& file)");
 
 			FMTSTREAM_VERIFY_CALL(readHeader, file.header);
+			FMTSTREAM_VERIFY_CALL(readRawData, file.rawData);
 
 			return error;
 		}
@@ -34,7 +118,7 @@ namespace dsk
 			char buffer[8];
 
 			ChunkHeader chunkHeader;
-			void* chunk = nullptr;
+			std::vector<uint32_t> chunksFound;
 
 			// Read PNG signature
 
@@ -47,10 +131,10 @@ namespace dsk
 			FMTSTREAM_VERIFY(std::equal(chunkHeader.type, chunkHeader.type + 4, "IHDR"), PngInvalidChunkType, "Expected first chunk to be 'IHDR'. Instead, got '" + std::string(chunkHeader.type, 4) + "'.");
 			FMTSTREAM_VERIFY_CALL(readChunk_IHDR, header, &chunkHeader);
 			FMTSTREAM_VERIFY_CALL(readAndCheckChunkCrc, &chunkHeader);
+			chunksFound.push_back(0x49484452);
 
 			// Load all chunks (except IDAT) until IEND
 
-			std::vector<uint32_t> chunksFound = { 0x49484452 };	// IHDR
 			std::streampos firstIdatChunk = -1;
 
 			FMTSTREAM_VERIFY_CALL(readChunkHeader, &chunkHeader);
@@ -91,6 +175,11 @@ namespace dsk
 					}
 					default:	// Unrecognized or ignored chunks
 					{
+						if (chunkType == 0x49444154 && firstIdatChunk == std::streampos(-1))
+						{
+							firstIdatChunk = getSourcePos() - std::streamoff(8);
+						}
+
 						FMTSTREAM_VERIFY_CALL(setSourcePos, getSourcePos() + std::streamoff(chunkHeader.length));
 						break;
 					}
@@ -103,15 +192,41 @@ namespace dsk
 				FMTSTREAM_VERIFY_CALL(readChunkHeader, &chunkHeader);
 			}
 
-			chunksFound.push_back(0x49454E44);	// IEND
+			// Load IEND chunk
 
-			// TODO: Check there is a PLTE if color type == 3
-			// TODO: Check IDAT chunks appear consecutively
+			FMTSTREAM_VERIFY_CALL(readChunk_IEND, header, &chunkHeader);
+			FMTSTREAM_VERIFY_CALL(readAndCheckChunkCrc, &chunkHeader);
+			chunksFound.push_back(0x49454E44);
+
+			// Check everything is valid
+
+			FMTSTREAM_VERIFY_CALL(checkChunksFound, header, chunksFound);
 			// TODO: Check cHRM and gAMA if there is sRGB
 
-			// Load IEND
-
 			// Go to first IDAT chunk
+
+			FMTSTREAM_VERIFY_CALL(setSourcePos, firstIdatChunk);
+
+			return error;
+		}
+
+		const FormatError& PngStream::readRawData(std::vector<uint8_t>& rawData)
+		{
+			FMTSTREAM_BEGIN_READ_FUNC("PngStream::readRawData(std::vector<uint8_t>& rawData)");
+
+			rawData.clear();
+			ChunkHeader chunkHeader;
+
+			FMTSTREAM_VERIFY_CALL(readChunkHeader, &chunkHeader);
+			FMTSTREAM_VERIFY(std::equal(chunkHeader.type, chunkHeader.type + 4, "IDAT"), PngInvalidChunkType, "Expected IDAT chunk. Instead, got '" + std::string(chunkHeader.type, 4) + "'.");
+			
+			do
+			{
+				FMTSTREAM_VERIFY_CALL(readChunk_IDAT, rawData, &chunkHeader);
+				FMTSTREAM_VERIFY_CALL(readAndCheckChunkCrc, &chunkHeader);
+				FMTSTREAM_VERIFY_CALL(readChunkHeader, &chunkHeader);
+
+			} while (std::equal(chunkHeader.type, chunkHeader.type + 4, "IDAT"));
 
 			return error;
 		}
@@ -120,40 +235,35 @@ namespace dsk
 		{
 			FMTSTREAM_BEGIN_WRITE_FUNC("PngStream::writeFile(const png::File& file)");
 
-			return error;
-		}
+			// PNG Signature
 
-		const FormatError& PngStream::writeHeader(const png::Header& header)
-		{
-			FMTSTREAM_BEGIN_WRITE_FUNC("PngStream::writeHeader(const png::Header& header)");
+			FMTSTREAM_WRITE("\x89PNG\r\n\x1A\n", 8);
 
-			return error;
-		}
+			// IHDR
 
-		const FormatError& PngStream::writeImageStructure(const png::ImageStructure& imageStructure)
-		{
-			FMTSTREAM_BEGIN_WRITE_FUNC("PngStream::writeImageStructure(const png::ImageStructure& imageStructure)");
+			FMTSTREAM_WRITE(uint32_t(13));
+			FMTSTREAM_WRITE("IHDR", 4);
+			FMTSTREAM_WRITE(file.header.imageStructure.width);
+			FMTSTREAM_WRITE(file.header.imageStructure.height);
+			FMTSTREAM_WRITE(file.header.imageStructure.bitDepth);
+			FMTSTREAM_WRITE(file.header.imageStructure.colorType);
+			FMTSTREAM_WRITE(uint8_t(0));
+			FMTSTREAM_WRITE(uint8_t(0));
+			FMTSTREAM_WRITE(file.header.imageStructure.interlaceMethod);
+			FMTSTREAM_WRITE(uint32_t(0));
 
-			return error;
-		}
+			// IDAT
 
-		const FormatError& PngStream::writeColorSpace(const png::ColorSpace& colorSpace)
-		{
-			FMTSTREAM_BEGIN_WRITE_FUNC("PngStream::writeColorSpace(const png::ColorSpace& colorSpace)");
+			FMTSTREAM_WRITE(file.rawData.size());
+			FMTSTREAM_WRITE("IDAT", 4);
+			FMTSTREAM_WRITE(file.rawData.data(), file.rawData.size());
+			FMTSTREAM_WRITE(uint32_t(0));
 
-			return error;
-		}
+			// IEND
 
-		const FormatError& PngStream::writeGamma(float gamma)
-		{
-			FMTSTREAM_BEGIN_WRITE_FUNC("PngStream::writeGamma(float gamma)");
-
-			return error;
-		}
-
-		const FormatError& PngStream::writeSRBGIntent(const png::SRGBIntent& sRGBIntent)
-		{
-			FMTSTREAM_BEGIN_WRITE_FUNC("PngStream::writeSRBGIntent(const png::SRGBIntent& sRGBIntent)");
+			FMTSTREAM_WRITE(uint32_t(0));
+			FMTSTREAM_WRITE("IEND", 4);
+			FMTSTREAM_WRITE(uint32_t(0));
 
 			return error;
 		}
@@ -389,52 +499,6 @@ namespace dsk
 			return error;
 		}
 
-		namespace
-		{
-			class CrcTable
-			{
-				public:
-
-					constexpr CrcTable()
-					{
-						for (uint32_t n = 0; n < 256; ++n)
-						{
-							values[n] = n;
-							for (uint8_t k = 0; k < 8; ++k)
-							{
-								if (values[n] & 1)
-								{
-									values[n] = 0xEDB88320 ^ (values[n] >> 1);
-								}
-								else
-								{
-									values[n] >>= 1;
-								}
-							}
-						}
-					}
-
-					uint32_t computeCrc(const uint8_t* buffer, uint64_t size) const
-					{
-						uint32_t crc = 0xFFFFFFFF;
-
-						const uint8_t* const bufferEnd = buffer + size;
-						for (; buffer != bufferEnd; ++buffer)
-						{
-							crc = values[(crc ^ *buffer) & 0xFF] ^ (crc >> 8);
-						}
-
-						return ~crc;
-					}
-
-				private:
-
-					uint32_t values[256];
-			};
-
-			constexpr CrcTable crcTable;
-		}
-
 		const FormatError& PngStream::readAndCheckChunkCrc(void* ptr)
 		{
 			FMTSTREAM_READ_FUNC("PngStream::readAndCheckChunkCrc(void* ptr)");
@@ -455,9 +519,136 @@ namespace dsk
 			return error;
 		}
 	
-		const FormatError& PngStream::checkChunksFound(const std::vector<uint32_t>& chunksFound)
+		const FormatError& PngStream::checkChunksFound(const png::Header& header, const std::vector<uint32_t>& chunksFound)
 		{
-			FMTSTREAM_READ_FUNC("PngStream::checkChunksFound(const std::vector<uint32_t>& chunksFound)");
+			FMTSTREAM_READ_FUNC("PngStream::checkChunksFound(const png::Header& header, const std::vector<uint32_t>& chunksFound)");
+
+			// First chunk and last chunk
+
+			FMTSTREAM_VERIFY(chunksFound.size() >= 2, PngInvalidChunkOrdering, "PNG Files cannot have less than 2 chunks.");
+			FMTSTREAM_VERIFY(chunksFound.front() == 0x49484452, PngInvalidChunkOrdering, "Expected first chunk to be IHDR. Instead, got '" + std::string(reinterpret_cast<const char*>(&chunksFound.front()), 4) + "'.");
+			FMTSTREAM_VERIFY(chunksFound.back() == 0x49454E44, PngInvalidChunkOrdering, "Expected last chunk to be IEND. Instead, got '" + std::string(reinterpret_cast<const char*>(&chunksFound.front()), 4) + "'.");
+
+			// Chunk presence and count
+
+			std::unordered_map<uint32_t, uint32_t> chunkCount = {
+				{0x49484452, 0},	// IHDR
+				{0x504C5445, 0},	// PLTE
+				{0x49444154, 0},	// IDAT
+				{0x49454E44, 0},	// IEND
+				{0x74524E53, 0},	// tRNS
+				{0x6348524D, 0},	// cHRM
+				{0x67414D41, 0},	// gAMA
+				{0x69434350, 0},	// iCCP
+				{0x73424954, 0},	// sBIT
+				{0x73524742, 0},	// sRGB
+				{0x74455854, 0},	// tEXT
+				{0x7A545874, 0},	// zTXt
+				{0x69545874, 0},	// iTXt
+				{0x624B4744, 0},	// bKGD
+				{0x68495354, 0},	// hIST
+				{0x70485973, 0},	// pHYs
+				{0x73504C54, 0},	// sPLT
+				{0x74494D45, 0},	// tIME
+			};
+
+			for (const uint32_t& chunkType : chunksFound)
+			{
+				if (chunkCount.find(chunkType) != chunkCount.end())
+				{
+					++chunkCount[chunkType];
+				}
+			}
+
+			FMTSTREAM_VERIFY(chunkCount[0x49484452] == 1, PngInvalidChunkOrdering, "There should be exactly 1 chunk IHDR. Found " + std::to_string(chunkCount[0x49484452]) + ".");
+			FMTSTREAM_VERIFY(chunkCount[0x504C5445] <= 1, PngInvalidChunkOrdering, "There should be at most 1 chunk PLTE. Found " + std::to_string(chunkCount[0x504C5445]) + ".");
+			if (header.imageStructure.colorType == png::ColorType::IndexedColor)
+			{
+				FMTSTREAM_VERIFY(chunkCount[0x504C5445] == 1, PngInvalidChunkOrdering, "If color type is 3, a 'PLTE' chunk is expected. Found none.");
+			}
+			FMTSTREAM_VERIFY(chunkCount[0x49444154] >= 1, PngInvalidChunkOrdering, "There should be at least 1 chunk IDAT. Found " + std::to_string(chunkCount[0x49444154]) + ".");
+			FMTSTREAM_VERIFY(chunkCount[0x49454E44] == 1, PngInvalidChunkOrdering, "There should be exactly 1 chunk IEND. Found " + std::to_string(chunkCount[0x49454E44]) + ".");
+			FMTSTREAM_VERIFY(chunkCount[0x74524E53] <= 1, PngInvalidChunkOrdering, "There should be at most 1 chunk tRNS. Found " + std::to_string(chunkCount[0x74524E53]) + ".");
+			FMTSTREAM_VERIFY(chunkCount[0x6348524D] <= 1, PngInvalidChunkOrdering, "There should be at most 1 chunk cHRM. Found " + std::to_string(chunkCount[0x6348524D]) + ".");
+			FMTSTREAM_VERIFY(chunkCount[0x67414D41] <= 1, PngInvalidChunkOrdering, "There should be at most 1 chunk gAMA. Found " + std::to_string(chunkCount[0x67414D41]) + ".");
+			FMTSTREAM_VERIFY(chunkCount[0x69434350] + chunkCount[0x73524742] <= 1, PngInvalidChunkOrdering, "There should be at most 1 chunk iCCP or sRGB. Found " + std::to_string(chunkCount[0x69434350] + chunkCount[0x73524742]) + ".");
+			FMTSTREAM_VERIFY(chunkCount[0x73424954] <= 1, PngInvalidChunkOrdering, "There should be at most 1 chunk sBIT. Found " + std::to_string(chunkCount[0x73424954]) + ".");
+			FMTSTREAM_VERIFY(chunkCount[0x624B4744] <= 1, PngInvalidChunkOrdering, "There should be at most 1 chunk bKGD. Found " + std::to_string(chunkCount[0x624B4744]) + ".");
+			FMTSTREAM_VERIFY(chunkCount[0x68495354] <= 1, PngInvalidChunkOrdering, "There should be at most 1 chunk hIST. Found " + std::to_string(chunkCount[0x68495354]) + ".");
+			FMTSTREAM_VERIFY(chunkCount[0x70485973] <= 1, PngInvalidChunkOrdering, "There should be at most 1 chunk pHYs. Found " + std::to_string(chunkCount[0x70485973]) + ".");
+			FMTSTREAM_VERIFY(chunkCount[0x74494D45] <= 1, PngInvalidChunkOrdering, "There should be at most 1 chunk tIME. Found " + std::to_string(chunkCount[0x74494D45]) + ".");
+
+			// Chunk ordering
+
+			bool has_PLTE = (chunkCount[0x504C5445] != 0);
+			bool found_PLTE = false;
+			bool found_IDAT = false;
+			bool in_IDAT = false;
+
+
+			uint64_t n = chunksFound.size() - 1;
+			for (uint64_t i = 1; i < n; ++i)
+			{
+				bool chunkValid = false;
+
+				if (in_IDAT)
+				{
+					if (chunksFound[i] == 0x49444154)
+					{
+						continue;
+					}
+					else
+					{
+						in_IDAT = false;
+					}
+				}
+
+				chunkValid = chunkValid || (chunksFound[i] == 0x74494D45);	// tIME
+				chunkValid = chunkValid || (chunksFound[i] == 0x7A545874);	// zTXT
+				chunkValid = chunkValid || (chunksFound[i] == 0x74455854);	// tEXt
+				chunkValid = chunkValid || (chunksFound[i] == 0x69545874);	// iTXt
+
+				if (!found_PLTE && !found_IDAT)
+				{
+					chunkValid = chunkValid || (chunksFound[i] == 0x69434350);	// iCCP
+					chunkValid = chunkValid || (chunksFound[i] == 0x73524742);	// sRGB
+					chunkValid = chunkValid || (chunksFound[i] == 0x73424954);	// sBIT
+					chunkValid = chunkValid || (chunksFound[i] == 0x67414D41);	// gAMA
+					chunkValid = chunkValid || (chunksFound[i] == 0x6348524D);	// cHRM
+
+					if (chunksFound[i] == 0x504C5445)
+					{
+						found_PLTE = true;
+						continue;
+					}
+				}
+
+				if (!found_IDAT)
+				{
+					chunkValid = chunkValid || (chunksFound[i] == 0x70485973);	// pHYs
+					chunkValid = chunkValid || (chunksFound[i] == 0x73504C54);	// sPLT
+				}
+
+				if ((!has_PLTE || found_PLTE) && !found_IDAT)
+				{
+					chunkValid = chunkValid || (chunksFound[i] == 0x74524E53);	// tRNS
+					chunkValid = chunkValid || (chunksFound[i] == 0x68495354);	// hIST
+					chunkValid = chunkValid || (chunksFound[i] == 0x624B4744);	// bKGD
+
+					if (chunksFound[i] == 0x49444154)
+					{
+						found_IDAT = true;
+						in_IDAT = true;
+						continue;
+					}
+				}
+
+				FMTSTREAM_VERIFY(chunkValid, PngInvalidChunkOrdering, "Chunk '" + std::string(reinterpret_cast<const char*>(&chunksFound[i]), 4) + "' unrecognized or at bad position.");
+			}
+
+			// Chunk presence (PLTE mandatory if color type, etc...)
+
+			// Chunk values (cHRM and gAMA if sRGB, etc...)
 
 			return error;
 		}

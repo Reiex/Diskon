@@ -78,6 +78,9 @@
     <ClInclude Include="..\..\include\Diskon\Format\templates\FormatStream.hpp">
       <Filter>Header Files\Format\templates</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\Diskon\Format\Zlib.hpp">
+      <Filter>Header Files\Format</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\Diskon\Format\Wave.cpp">
@@ -93,6 +96,9 @@
       <Filter>Source Files\Format</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\Diskon\Format\Png.cpp">
+      <Filter>Source Files\Format</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Diskon\Format\Zlib.cpp">
       <Filter>Source Files\Format</Filter>
     </ClCompile>
   </ItemGroup>

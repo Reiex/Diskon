@@ -35,6 +35,7 @@ namespace dsk
 				// Png
 
 				PngInvalidSignature,
+				PngInvalidChunkOrdering,
 				PngInvalidChunkType,
 				PngInvalidChunkSize,
 				PngInvalidChunkContent,
@@ -62,11 +63,27 @@ namespace dsk
 				XmlInvalidDoctype,
 				XmlInvalidProcessingInstruction,
 				XmlInvalidElement,
+
+				// Zlib
+
+				ZlibInvalidCompressionMethod,
+				ZlibInvalidCompressionInfo,
+				ZlibInvalidCheck,
+				ZlibDeflateInvalidCompression,
 			};
 
 			ErrorCode errorCode;
 			std::string errorMessage;
 		};
+
+		/*
+		
+		TODO:
+		- Un stream peut sauvegarder des infos pour la lecture/écriture
+		- Un stream est "reset" quand on change le stream soujacent (et uniquement à ce moment là, pas de reset de l'exterieur)
+		- On n'a plus accès a rien dans le stream soujacent (même setPos/getPos) tout doit passer par des fonctions spécifiques...
+		
+		*/
 
 		class FormatStream
 		{

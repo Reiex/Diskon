@@ -9,6 +9,12 @@ namespace dsk
 		struct FormatError;
 		class FormatStream;
 
+		namespace png
+		{
+
+		}
+		class PngStream;
+
 		namespace riff
 		{
 			struct ChunkHeader;
@@ -25,7 +31,7 @@ namespace dsk
 			struct File;
 		}
 		class WaveStream;
-		
+
 		namespace xml
 		{
 			struct Declaration;
@@ -39,11 +45,11 @@ namespace dsk
 		}
 		class XmlStream;
 
-		namespace png
+		namespace zlib
 		{
 
 		}
-		class PngStream;
+		class ZlibStream;
 	}
 }
 

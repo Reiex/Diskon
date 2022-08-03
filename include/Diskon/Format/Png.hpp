@@ -69,8 +69,10 @@ namespace dsk
 			struct File
 			{
 				Header header;
-
 				std::vector<uint8_t> rawData;
+
+				FormatError getSamples(std::vector<uint8_t>& samples) const;
+				FormatError setSamples(const std::vector<uint8_t>& samples);
 			};
 		}
 
@@ -87,13 +89,9 @@ namespace dsk
 
 				const FormatError& readFile(png::File& file);
 				const FormatError& readHeader(png::Header& header);
+				const FormatError& readRawData(std::vector<uint8_t>& rawData);
 
 				const FormatError& writeFile(const png::File& file);
-				const FormatError& writeHeader(const png::Header& header);
-				const FormatError& writeImageStructure(const png::ImageStructure& imageStructure);
-				const FormatError& writeColorSpace(const png::ColorSpace& colorSpace);
-				const FormatError& writeGamma(float gamma);
-				const FormatError& writeSRBGIntent(const png::SRGBIntent& sRGBIntent);
 
 				~PngStream() = default;
 
@@ -122,7 +120,7 @@ namespace dsk
 
 				const FormatError& readAndCheckChunkCrc(void* ptr);
 
-				const FormatError& checkChunksFound(const std::vector<uint32_t>& chunksFound);
+				const FormatError& checkChunksFound(const png::Header& header, const std::vector<uint32_t>& chunksFound);
 		};
 	}
 }

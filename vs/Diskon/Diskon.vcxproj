@@ -35,6 +35,7 @@
     <ClInclude Include="..\..\include\Diskon\Format\types.hpp" />
     <ClInclude Include="..\..\include\Diskon\Format\Wave.hpp" />
     <ClInclude Include="..\..\include\Diskon\Format\Xml.hpp" />
+    <ClInclude Include="..\..\include\Diskon\Format\Zlib.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\Diskon\Format\Png.cpp" />
@@ -42,6 +43,7 @@
     <ClCompile Include="..\..\src\Diskon\Format\FormatStream.cpp" />
     <ClCompile Include="..\..\src\Diskon\Format\Wave.cpp" />
     <ClCompile Include="..\..\src\Diskon\Format\Xml.cpp" />
+    <ClCompile Include="..\..\src\Diskon\Format\Zlib.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
