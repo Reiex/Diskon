@@ -1,0 +1,3 @@
+[submodule "external/Ruc"]
+	path = external/Ruc
+	url = https://github.com/Reiex/Ruc.git
