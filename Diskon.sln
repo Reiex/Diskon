@@ -41,7 +41,7 @@ Global
 		SolutionGuid = {69363B1C-0E5D-4EBB-9143-34C4A07BE9AA}
 	EndGlobalSection
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
-		external\Ruc\vs\Ruc\Ruc.vcxitems*{18ae803f-78b5-42fa-944d-eaf5e34c0530}*SharedItemsImports = 4
+		external\Ruc\vs\Ruc\Ruc.vcxitems*{0a8dafa6-2b5c-4787-ab62-113b9c03ebdd}*SharedItemsImports = 4
 		external\Ruc\vs\Ruc\Ruc.vcxitems*{c436cfaf-77a1-4c88-beb1-4b7c0d9e9262}*SharedItemsImports = 9
 	EndGlobalSection
 EndGlobal
