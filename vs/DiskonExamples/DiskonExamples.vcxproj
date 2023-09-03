@@ -70,23 +70,23 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <OutDir>$(SolutionDir)build\</OutDir>
-    <IntDir>$(SolutionDir)obj\$(ProjectName)-$(Configuration)-$(Platform)\</IntDir>
+    <OutDir>$(ProjectDir)..\..\build\</OutDir>
+    <IntDir>$(ProjectDir)..\..\obj\$(ProjectName)-$(Configuration)-$(Platform)\</IntDir>
     <TargetName>$(ProjectName)-$(Configuration)-$(Platform)</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <OutDir>$(SolutionDir)build\</OutDir>
-    <IntDir>$(SolutionDir)obj\$(ProjectName)-$(Configuration)-$(Platform)\</IntDir>
+    <OutDir>$(ProjectDir)..\..\build\</OutDir>
+    <IntDir>$(ProjectDir)..\..\obj\$(ProjectName)-$(Configuration)-$(Platform)\</IntDir>
     <TargetName>$(ProjectName)-$(Configuration)-$(Platform)</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <OutDir>$(SolutionDir)build\</OutDir>
-    <IntDir>$(SolutionDir)obj\$(ProjectName)-$(Configuration)-$(Platform)\</IntDir>
+    <OutDir>$(ProjectDir)..\..\build\</OutDir>
+    <IntDir>$(ProjectDir)..\..\obj\$(ProjectName)-$(Configuration)-$(Platform)\</IntDir>
     <TargetName>$(ProjectName)-$(Configuration)-$(Platform)</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <OutDir>$(SolutionDir)build\</OutDir>
-    <IntDir>$(SolutionDir)obj\$(ProjectName)-$(Configuration)-$(Platform)\</IntDir>
+    <OutDir>$(ProjectDir)..\..\build\</OutDir>
+    <IntDir>$(ProjectDir)..\..\obj\$(ProjectName)-$(Configuration)-$(Platform)\</IntDir>
     <TargetName>$(ProjectName)-$(Configuration)-$(Platform)</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -96,12 +96,12 @@
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpplatest</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)include\;$(SolutionDir)external\Ruc\include\</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\include\;$(ProjectDir)..\..\external\Ruc\include\</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)lib\</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(ProjectDir)..\..\lib\</AdditionalLibraryDirectories>
       <AdditionalDependencies>Diskon-$(Configuration)-$(Platform).lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
@@ -117,14 +117,14 @@
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpplatest</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)include\;$(SolutionDir)external\Ruc\include\</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\include\;$(ProjectDir)..\..\external\Ruc\include\</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)lib\</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(ProjectDir)..\..\lib\</AdditionalLibraryDirectories>
       <AdditionalDependencies>Diskon-$(Configuration)-$(Platform).lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
@@ -138,12 +138,12 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpplatest</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)include\;$(SolutionDir)external\Ruc\include\</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\include\;$(ProjectDir)..\..\external\Ruc\include\</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)lib\</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(ProjectDir)..\..\lib\</AdditionalLibraryDirectories>
       <AdditionalDependencies>Diskon-$(Configuration)-$(Platform).lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
@@ -159,14 +159,14 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpplatest</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)include\;$(SolutionDir)external\Ruc\include\</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\include\;$(ProjectDir)..\..\external\Ruc\include\</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)lib\</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(ProjectDir)..\..\lib\</AdditionalLibraryDirectories>
       <AdditionalDependencies>Diskon-$(Configuration)-$(Platform).lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
