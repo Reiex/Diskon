@@ -105,7 +105,7 @@
       <AdditionalDependencies>Diskon-$(Configuration)-$(Platform).lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /y /d "$(SolutionDir)lib\Diskon-$(Configuration)-$(Platform).dll" "$(SolutionDir)build\"</Command>
+      <Command>xcopy /y /d "$(ProjectDir)..\..\lib\Diskon-$(Configuration)-$(Platform).dll" "$(ProjectDir)..\..\build\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -128,7 +128,7 @@
       <AdditionalDependencies>Diskon-$(Configuration)-$(Platform).lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /y /d "$(SolutionDir)lib\Diskon-$(Configuration)-$(Platform).dll" "$(SolutionDir)build\"</Command>
+      <Command>xcopy /y /d "$(ProjectDir)..\..\lib\Diskon-$(Configuration)-$(Platform).dll" "$(ProjectDir)..\..\build\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -147,7 +147,7 @@
       <AdditionalDependencies>Diskon-$(Configuration)-$(Platform).lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /y /d "$(SolutionDir)lib\Diskon-$(Configuration)-$(Platform).dll" "$(SolutionDir)build\"</Command>
+      <Command>xcopy /y /d "$(ProjectDir)..\..\lib\Diskon-$(Configuration)-$(Platform).dll" "$(ProjectDir)..\..\build\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -170,7 +170,7 @@
       <AdditionalDependencies>Diskon-$(Configuration)-$(Platform).lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /y /d "$(SolutionDir)lib\Diskon-$(Configuration)-$(Platform).dll" "$(SolutionDir)build\"</Command>
+      <Command>xcopy /y /d "$(ProjectDir)..\..\lib\Diskon-$(Configuration)-$(Platform).dll" "$(ProjectDir)..\..\build\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
