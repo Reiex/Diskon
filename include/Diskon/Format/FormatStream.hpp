@@ -69,18 +69,6 @@ namespace dsk
 	}
 }
 
-#define DSKFMT_BEGIN()			\
-assert(_stream);				\
-assert(_stream->getStatus());	\
-
-#define DSKFMT_CHECK(condition, message)													\
-if (!(condition))																			\
-{																							\
-	return _stream->getStatus().setErrorMessage(__PRETTY_FUNCTION__, __LINE__, message);	\
-}
-
-#define DSKFMT_CALL(func, ...)														\
-if (!func(__VA_ARGS__))																\
-{																					\
-	return _stream->getStatus().relayErrorMessage(__PRETTY_FUNCTION__, __LINE__);	\
-}
+#define DSKFMT_BEGIN()						assert(_stream); assert(_stream->getStatus())
+#define DSKFMT_CHECK(condition, message)	RUC_CHECK(_stream->getStatus(), _stream->getStatus(), condition, message)
+#define DSKFMT_CALL(func, ...)				func(__VA_ARGS__); RUC_RELAY(_stream->getStatus(), _stream->getStatus())
