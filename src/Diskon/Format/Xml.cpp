@@ -105,9 +105,12 @@ namespace dsk
 			DSKFMT_CHECK(!tag.name.empty(), "Could not read tag name.");
 			DSKFMT_CALL(_stream->skipCharWhile, isSpaceChar, skipCount);
 
+			tag.attributes.emplace_back();
 			while (skipCount)
 			{
-				std::string attName;
+				std::string& attName = tag.attributes.back().first;
+				std::string& attValue = tag.attributes.back().second;
+
 				DSKFMT_CALL(_readName, attName);
 				if (attName.empty())
 				{
@@ -115,15 +118,15 @@ namespace dsk
 				}
 				else
 				{
-					std::string attValue;
 					DSKFMT_CALL(_readEq);
 					DSKFMT_CALL(_readAttValue, attValue);
 					DSKFMT_CALL(_stream->skipCharWhile, isSpaceChar, skipCount);
 
-					tag.attributes.emplace_back(attName, attValue);
+					tag.attributes.emplace_back();
 				}
-
 			}
+
+			tag.attributes.pop_back();
 
 			DSKFMT_CALL(_stream->read, buffer);
 			if (buffer != '>')
@@ -149,7 +152,10 @@ namespace dsk
 			assert(!_tags.empty());
 			assert(((filter & xml::ContentType::Child) == 0) || ((filter & xml::ContentType::ChildTag) == 0));
 
-			content.charData.clear();
+			content.childTag.reset();
+			content.child.reset();
+			content.charData.reset();
+			content.instruction.reset();
 
 			char buffer[2];
 			bool parsedSomething;
@@ -216,20 +222,23 @@ namespace dsk
 					}
 					case xml::ContentType::ChildTag:
 					{
-						DSKFMT_CALL(readElementTag, content.childTag);
+						content.childTag = std::make_unique<xml::ElementTag>();
+						DSKFMT_CALL(readElementTag, *content.childTag);
 
 						break;
 					}
 					case xml::ContentType::Child:
 					{
-						DSKFMT_CALL(_readElement, content.child);
+						content.child = std::make_unique<xml::Element>();
+						DSKFMT_CALL(_readElement, *content.child);
 
 						break;
 					}
 					case xml::ContentType::CharData:
 					{
+						content.charData = std::make_unique<std::string>();
 						do {
-							DSKFMT_CALL(_stream->readCharWhile, [](char x) { return x != '<'; }, content.charData);
+							DSKFMT_CALL(_stream->readCharWhile, [](char x) { return x != '<'; }, *content.charData);
 							DSKFMT_CALL(_readComment, parsedSomething);
 						} while (parsedSomething);
 
@@ -237,7 +246,8 @@ namespace dsk
 					}
 					case xml::ContentType::ProcessingInstruction:
 					{
-						DSKFMT_CALL(_readProcessingInstruction, content.instruction, parsedSomething);
+						content.instruction = std::make_unique<xml::ProcessingInstruction>();
+						DSKFMT_CALL(_readProcessingInstruction, *content.instruction, parsedSomething);
 
 						break;
 					}
@@ -249,7 +259,8 @@ namespace dsk
 				{
 					case xml::ContentType::Child:
 					{
-						DSKFMT_CALL(readElementTag, content.childTag);
+						xml::ElementTag trash;
+						DSKFMT_CALL(readElementTag, trash);
 						DSKFMT_CALL(readElementContent, content, xml::ContentType::EndOfElement);
 
 						break;
@@ -265,7 +276,8 @@ namespace dsk
 					}
 					case xml::ContentType::ProcessingInstruction:
 					{
-						DSKFMT_CALL(_readProcessingInstruction, content.instruction, parsedSomething);
+						xml::ProcessingInstruction trash;
+						DSKFMT_CALL(_readProcessingInstruction, trash, parsedSomething);
 
 						break;
 					}
@@ -799,6 +811,11 @@ namespace dsk
 			{
 				case xml::ContentType::EndOfElement:
 				{
+					assert(!content.childTag);
+					assert(!content.child);
+					assert(!content.charData);
+					assert(!content.instruction);
+
 					DSKFMT_CALL(_stream->write, "</", 2);
 					DSKFMT_CALL(_stream->write, _tags.back().data(), _tags.back().size());
 					DSKFMT_CALL(_stream->write, '>');
@@ -813,28 +830,44 @@ namespace dsk
 				}
 				case xml::ContentType::ChildTag:
 				{
-					DSKFMT_CALL(writeElementTag, content.childTag);
+					assert(!content.child);
+					assert(!content.charData);
+					assert(!content.instruction);
+
+					DSKFMT_CALL(writeElementTag, *content.childTag);
 
 					break;
 				}
 				case xml::ContentType::Child:
 				{
-					DSKFMT_CALL(_writeElement, content.child);
+					assert(!content.childTag);
+					assert(!content.charData);
+					assert(!content.instruction);
+
+					DSKFMT_CALL(_writeElement, *content.child);
 
 					break;
 				}
 				case xml::ContentType::CharData:
 				{
-					assert(std::find(content.charData.begin(), content.charData.end(), '<') == content.charData.end());
+					assert(!content.childTag);
+					assert(!content.child);
+					assert(!content.instruction);
+
+					assert(std::find(content.charData->begin(), content.charData->end(), '<') == content.charData->end());
 					// TODO: assert(std::find(content.charData.begin(), content.charData.end(), '&') == content.charData.end());
 
-					DSKFMT_CALL(_stream->write, content.charData.data(), content.charData.size());
+					DSKFMT_CALL(_stream->write, content.charData->data(), content.charData->size());
 
 					break;
 				}
 				case xml::ContentType::ProcessingInstruction:
 				{
-					DSKFMT_CALL(_writeProcessingInstruction, content.instruction);
+					assert(!content.childTag);
+					assert(!content.child);
+					assert(!content.charData);
+
+					DSKFMT_CALL(_writeProcessingInstruction, *content.instruction);
 
 					break;
 				}

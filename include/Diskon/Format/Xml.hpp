@@ -75,10 +75,10 @@ namespace dsk
 			{
 				ContentType::Flags type;
 
-				ElementTag childTag;
-				Element child;
-				std::string charData;
-				ProcessingInstruction instruction;
+				std::unique_ptr<ElementTag> childTag;
+				std::unique_ptr<Element> child;
+				std::unique_ptr<std::string> charData;
+				std::unique_ptr<ProcessingInstruction> instruction;
 			};
 
 
