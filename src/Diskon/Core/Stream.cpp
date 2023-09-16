@@ -68,7 +68,7 @@ namespace dsk
 				return _status.relayErrorMessage(__PRETTY_FUNCTION__, __LINE__);
 			}
 
-			if (_refillBuffer(size))
+			if (!_refillBuffer(size))
 			{
 				return _status.relayErrorMessage(__PRETTY_FUNCTION__, __LINE__);
 			}
