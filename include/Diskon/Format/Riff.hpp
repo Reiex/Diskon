@@ -52,14 +52,14 @@ namespace dsk
 				RiffIStream& operator=(const RiffIStream& stream) = delete;
 				RiffIStream& operator=(RiffIStream&& stream) = delete;
 
-				const ruc::Status& readFile(riff::File& file);
-				const ruc::Status& readFileHeader(riff::FileHeader& header);
-				const ruc::Status& readChunk(riff::Chunk& chunk);
-				const ruc::Status& readChunkHeader(riff::ChunkHeader& header);
-				template<typename TValue> const ruc::Status& readChunkData(TValue& value);
-				template<typename TValue> const ruc::Status& readChunkData(TValue* values, uint32_t count);
-				const ruc::Status& skipChunkData(uint32_t size);
-				const ruc::Status& finishCurrentChunk();
+				void readFile(riff::File& file);
+				void readFileHeader(riff::FileHeader& header);
+				void readChunk(riff::Chunk& chunk);
+				void readChunkHeader(riff::ChunkHeader& header);
+				template<typename TValue> void readChunkData(TValue& value);
+				template<typename TValue> void readChunkData(TValue* values, uint32_t count);
+				void skipChunkData(uint32_t size);
+				void finishCurrentChunk();
 
 				uint32_t computeRemainingSize() const;	// TODO ? Remove or rewrite ?
 
@@ -70,9 +70,9 @@ namespace dsk
 				void setStreamState() override final;
 				void resetFormatState() override final;
 
-				const ruc::Status& _readChunk(riff::Chunk& chunk);
-				const ruc::Status& _readChunkHeader(riff::ChunkHeader& header);
-				const ruc::Status& _readChunkEnd();
+				void _readChunk(riff::Chunk& chunk);
+				void _readChunkHeader(riff::ChunkHeader& header);
+				void _readChunkEnd();
 
 				std::vector<std::array<uint32_t, 2>> _remainingSizes;
 				bool _readingData;
@@ -89,12 +89,12 @@ namespace dsk
 				RiffOStream& operator=(const RiffOStream& stream) = delete;
 				RiffOStream& operator=(RiffOStream&& stream) = delete;
 
-				const ruc::Status& writeFile(const riff::File& file);
-				const ruc::Status& writeFileHeader(const riff::FileHeader& header);
-				const ruc::Status& writeChunk(const riff::Chunk& chunk);
-				const ruc::Status& writeChunkHeader(const riff::ChunkHeader& header);
-				template<typename TValue> const ruc::Status& writeChunkData(const TValue& value);
-				template<typename TValue> const ruc::Status& writeChunkData(const TValue* values, uint32_t count);
+				void writeFile(const riff::File& file);
+				void writeFileHeader(const riff::FileHeader& header);
+				void writeChunk(const riff::Chunk& chunk);
+				void writeChunkHeader(const riff::ChunkHeader& header);
+				template<typename TValue> void writeChunkData(const TValue& value);
+				template<typename TValue> void writeChunkData(const TValue* values, uint32_t count);
 
 				uint32_t computeRemainingSize() const;	// TODO ? Remove or rewrite ?
 
@@ -105,9 +105,9 @@ namespace dsk
 				void setStreamState() override final;
 				void resetFormatState() override final;
 
-				const ruc::Status& _writeChunk(const riff::Chunk& chunk);
-				const ruc::Status& _writeChunkHeader(const riff::ChunkHeader& header);
-				const ruc::Status& _writeChunkEnd();
+				void _writeChunk(const riff::Chunk& chunk);
+				void _writeChunkHeader(const riff::ChunkHeader& header);
+				void _writeChunkEnd();
 
 				std::vector<std::array<uint32_t, 2>> _remainingSizes;
 				bool _writingData;

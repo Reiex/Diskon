@@ -40,7 +40,7 @@ void formatExample(const std::initializer_list<std::string>& filenames)
 
 		FileType formatFile;
 		formatIStream.readFile(formatFile);
-		assert(iStream->getStatus());
+		assert(formatIStream.getStatus());
 
 		delete iStream;
 		std::fclose(iFile);
@@ -50,7 +50,7 @@ void formatExample(const std::initializer_list<std::string>& filenames)
 		formatOStream.setStream(oStream);
 
 		formatOStream.writeFile(formatFile);
-		assert(oStream->getStatus());
+		assert(formatOStream.getStatus());
 
 		oStream->flush();
 		delete oStream;
@@ -112,44 +112,44 @@ void huffmanExample()
 
 int main()
 {
-	// formatExample<dsk::fmt::WaveIStream, dsk::fmt::WaveOStream, dsk::fmt::wave::File<int16_t>>(
-	// 	{
-	// 		"Balavoine8.wav",
-	// 		"Balavoine16.wav",
-	// 		"Balavoine24.wav",
-	// 		"Balavoine32.wav",
-	// 		"Balavoine32F.wav",
-	// 		"Balavoine64F.wav"
-	// 	}
-	// );
-	// formatExample<dsk::fmt::XmlIStream, dsk::fmt::XmlOStream, dsk::fmt::xml::File>(
-	// 	{
-	// 		"vk.xml",
-	// 		"video.xml"
-	// 	}
-	// );
-	// formatExample<dsk::fmt::PnmIStream, dsk::fmt::PnmOStream, dsk::fmt::pnm::File>(
-	// 	{
-	// 		"Gentianes.ppm",
-	// 		"LenaPlain16.ppm",
-	// 		"LenaPlain8.ppm",
-	// 		"LenaRaw16.ppm",
-	// 		"LenaRaw8.ppm",
-	// 		"LenaPlain.pgm",
-	// 		"LenaRaw.pgm",
-	// 		"LenaPlain.pbm",
-	// 		"LenaRaw.pbm"
-	// 	}
-	// );
-	// formatExample<dsk::fmt::ObjIStream, dsk::fmt::ObjOStream, dsk::fmt::obj::File>(
-	// 	{
-	// 		"suzanne.obj",
-	// 		"teapot.obj"
-	// 	}
-	// );
+	formatExample<dsk::fmt::WaveIStream, dsk::fmt::WaveOStream, dsk::fmt::wave::File<int16_t>>(
+		{
+			"Balavoine8.wav",
+			"Balavoine16.wav",
+			"Balavoine24.wav",
+			"Balavoine32.wav",
+			"Balavoine32F.wav",
+			"Balavoine64F.wav"
+		}
+	);
+	formatExample<dsk::fmt::XmlIStream, dsk::fmt::XmlOStream, dsk::fmt::xml::File>(
+		{
+			"vk.xml",
+			"video.xml"
+		}
+	);
+	formatExample<dsk::fmt::PnmIStream, dsk::fmt::PnmOStream, dsk::fmt::pnm::File>(
+		{
+			"Gentianes.ppm",
+			"LenaPlain16.ppm",
+			"LenaPlain8.ppm",
+			"LenaRaw16.ppm",
+			"LenaRaw8.ppm",
+			"LenaPlain.pgm",
+			"LenaRaw.pgm",
+			"LenaPlain.pbm",
+			"LenaRaw.pbm"
+		}
+	);
+	formatExample<dsk::fmt::ObjIStream, dsk::fmt::ObjOStream, dsk::fmt::obj::File>(
+		{
+			"suzanne.obj",
+			"teapot.obj"
+		}
+	);
 
-	// huffmanExample<std::endian::big>();
-	// huffmanExample<std::endian::little>();
+	huffmanExample<std::endian::big>();
+	huffmanExample<std::endian::little>();
 
 	constexpr char str[] = "Hello world ! Ceci est une merveilleuse chaine de caracteres...";
 	
@@ -168,7 +168,7 @@ int main()
 	formatOStream.setStream(oStream);
 	
 	formatOStream.writeFile(formatFile);
-	assert(oStream->getStatus());
+	assert(formatOStream.getStatus());
 
 	oStream->write(uint16_t(0xFFFF));
 	oStream->flush();
@@ -184,7 +184,7 @@ int main()
 	
 	dsk::fmt::deflate::File decodedFile;
 	formatIStream.readFile(decodedFile);
-	assert(iStream->getStatus());
+	assert(formatIStream.getStatus());
 	
 	delete iStream;
 	std::fclose(iFile);

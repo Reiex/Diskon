@@ -25,6 +25,8 @@ namespace dsk
 
 				void setStream(IStream* stream, bool resetState = true);
 
+				const ruc::Status& getStatus() const { return _status; }
+
 				~FormatIStream() = default;
 
 			protected:
@@ -35,6 +37,8 @@ namespace dsk
 				virtual void resetFormatState() = 0;
 
 				static constexpr uint64_t _singleBufferSize = 4096;
+
+				ruc::Status _status;
 
 				IStream* _stream;
 				std::vector<FormatIStream*> _subStreams;
@@ -52,6 +56,8 @@ namespace dsk
 
 				void setStream(OStream* stream, bool resetState = true);
 
+				const ruc::Status& getStatus() const { return _status; }
+
 				~FormatOStream() = default;
 
 			protected:
@@ -63,12 +69,13 @@ namespace dsk
 
 				static constexpr uint64_t _singleBufferSize = 4096;
 
+				ruc::Status _status;
+
 				OStream* _stream;
 				std::vector<FormatOStream*> _subStreams;
 		};
 	}
 }
 
-#define DSKFMT_BEGIN()						assert(_stream); assert(_stream->getStatus())
-#define DSKFMT_CHECK(condition, message)	RUC_CHECK(_stream->getStatus(), _stream->getStatus(), condition, message)
-#define DSKFMT_CALL(func, ...)				func(__VA_ARGS__); RUC_RELAY(_stream->getStatus(), _stream->getStatus())
+#define DSKFMT_BEGIN()					assert(_stream); assert(_stream->getStatus()); assert(_status)
+#define DSKFMT_STREAM_CALL(func, ...)	_stream->func(__VA_ARGS__); RUC_RELAYCOPY(_stream->getStatus(), _status, RUC_VOID)

@@ -52,18 +52,16 @@ namespace dsk
 		{
 		}
 
-		const ruc::Status& XmlIStream::readFile(xml::File& file)
+		void XmlIStream::readFile(xml::File& file)
 		{
 			DSKFMT_BEGIN();
 
-			DSKFMT_CALL(readProlog, file.prolog);
-			DSKFMT_CALL(_readElement, file.root);
-			DSKFMT_CALL(readEnding, file.ending);
-
-			return _stream->getStatus();
+			DSK_CALL(readProlog, file.prolog);
+			DSK_CALL(_readElement, file.root);
+			DSK_CALL(readEnding, file.ending);
 		}
 
-		const ruc::Status& XmlIStream::readProlog(xml::Prolog& prolog)
+		void XmlIStream::readProlog(xml::Prolog& prolog)
 		{
 			DSKFMT_BEGIN();
 
@@ -73,21 +71,19 @@ namespace dsk
 			prolog.doctype.reset();
 			prolog.instructions.clear();
 
-			DSKFMT_CALL(_readDeclaration, prolog.declaration);
-			DSKFMT_CALL(_readPIsSpacesAndComments, prolog.instructions);
-			DSKFMT_CALL(_readDoctype, prolog.doctype);
+			DSK_CALL(_readDeclaration, prolog.declaration);
+			DSK_CALL(_readPIsSpacesAndComments, prolog.instructions);
+			DSK_CALL(_readDoctype, prolog.doctype);
 
 			if (prolog.doctype.has_value())
 			{
-				DSKFMT_CALL(_readPIsSpacesAndComments, prolog.instructions);
+				DSK_CALL(_readPIsSpacesAndComments, prolog.instructions);
 			}
 
 			_prologRead = true;
-
-			return _stream->getStatus();
 		}
 
-		const ruc::Status& XmlIStream::readElementTag(xml::ElementTag& tag)
+		void XmlIStream::readElementTag(xml::ElementTag& tag)
 		{
 			DSKFMT_BEGIN();
 
@@ -100,10 +96,10 @@ namespace dsk
 			uint64_t skipCount;
 			char buffer;
 
-			DSKFMT_CALL(_stream->expect, '<');
-			DSKFMT_CALL(_readName, tag.name);
-			DSKFMT_CHECK(!tag.name.empty(), "Could not read tag name.");
-			DSKFMT_CALL(_stream->skipCharWhile, isSpaceChar, skipCount);
+			DSKFMT_STREAM_CALL(expect, '<');
+			DSK_CALL(_readName, tag.name);
+			DSK_CHECK(!tag.name.empty(), "Could not read tag name.");
+			DSKFMT_STREAM_CALL(skipCharWhile, isSpaceChar, skipCount);
 
 			tag.attributes.emplace_back();
 			while (skipCount)
@@ -111,16 +107,16 @@ namespace dsk
 				std::string& attName = tag.attributes.back().first;
 				std::string& attValue = tag.attributes.back().second;
 
-				DSKFMT_CALL(_readName, attName);
+				DSK_CALL(_readName, attName);
 				if (attName.empty())
 				{
 					skipCount = 0;
 				}
 				else
 				{
-					DSKFMT_CALL(_readEq);
-					DSKFMT_CALL(_readAttValue, attValue);
-					DSKFMT_CALL(_stream->skipCharWhile, isSpaceChar, skipCount);
+					DSK_CALL(_readEq);
+					DSK_CALL(_readAttValue, attValue);
+					DSKFMT_STREAM_CALL(skipCharWhile, isSpaceChar, skipCount);
 
 					tag.attributes.emplace_back();
 				}
@@ -128,11 +124,11 @@ namespace dsk
 
 			tag.attributes.pop_back();
 
-			DSKFMT_CALL(_stream->read, buffer);
+			DSKFMT_STREAM_CALL(read, buffer);
 			if (buffer != '>')
 			{
-				DSKFMT_CHECK(buffer == '/', std::format("Unexpected character in element tag: '{}'.", buffer));
-				DSKFMT_CALL(_stream->expect, '>');
+				DSK_CHECK(buffer == '/', std::format("Unexpected character in element tag: '{}'.", buffer));
+				DSKFMT_STREAM_CALL(expect, '>');
 				tag.isEmpty = true;
 				_treeRead = _tags.empty();
 			}
@@ -141,11 +137,9 @@ namespace dsk
 				tag.isEmpty = false;
 				_tags.push_back(tag.name);
 			}
-
-			return _stream->getStatus();
 		}
 
-		const ruc::Status& XmlIStream::readElementContent(xml::ElementContent& content, xml::ContentType::Flags filter)
+		void XmlIStream::readElementContent(xml::ElementContent& content, xml::ContentType::Flags filter)
 		{
 			DSKFMT_BEGIN();
 
@@ -164,12 +158,12 @@ namespace dsk
 			// Get rid of comments (not spaces because it would belong to a charData
 
 			do {
-				DSKFMT_CALL(_readComment, parsedSomething);
+				DSK_CALL(_readComment, parsedSomething);
 			} while (parsedSomething);
 
 			// Read the two first characters and guess what the next content type is
 
-			DSKFMT_CALL(_stream->read, buffer, 2);
+			DSKFMT_STREAM_CALL(read, buffer, 2);
 			if (buffer[0] == '<' && buffer[1] == '?')
 			{
 				content.type = xml::ContentType::ProcessingInstruction;
@@ -196,7 +190,7 @@ namespace dsk
 
 			// Put back these characters and check if the content will be read or ignored
 
-			DSKFMT_CALL(_stream->unread, 2);
+			DSKFMT_STREAM_CALL(unread, 2);
 			bool readContent = (content.type == xml::ContentType::EndOfElement) || (content.type & filter);
 
 			// Read/Ignore content
@@ -209,9 +203,9 @@ namespace dsk
 					{
 						uint64_t skipCount;
 						const std::string etag = "</" + _tags.back();
-						DSKFMT_CALL(_stream->expect, etag.data(), etag.size());
-						DSKFMT_CALL(_stream->skipCharWhile, isSpaceChar, skipCount);
-						DSKFMT_CALL(_stream->expect, '>');
+						DSKFMT_STREAM_CALL(expect, etag.data(), etag.size());
+						DSKFMT_STREAM_CALL(skipCharWhile, isSpaceChar, skipCount);
+						DSKFMT_STREAM_CALL(expect, '>');
 						_tags.pop_back();
 						if (_tags.empty())
 						{
@@ -223,14 +217,14 @@ namespace dsk
 					case xml::ContentType::ChildTag:
 					{
 						content.childTag = std::make_unique<xml::ElementTag>();
-						DSKFMT_CALL(readElementTag, *content.childTag);
+						DSK_CALL(readElementTag, *content.childTag);
 
 						break;
 					}
 					case xml::ContentType::Child:
 					{
 						content.child = std::make_unique<xml::Element>();
-						DSKFMT_CALL(_readElement, *content.child);
+						DSK_CALL(_readElement, *content.child);
 
 						break;
 					}
@@ -238,8 +232,8 @@ namespace dsk
 					{
 						content.charData = std::make_unique<std::string>();
 						do {
-							DSKFMT_CALL(_stream->readCharWhile, [](char x) { return x != '<'; }, *content.charData);
-							DSKFMT_CALL(_readComment, parsedSomething);
+							DSKFMT_STREAM_CALL(readCharWhile, [](char x) { return x != '<'; }, *content.charData);
+							DSK_CALL(_readComment, parsedSomething);
 						} while (parsedSomething);
 
 						break;
@@ -247,7 +241,7 @@ namespace dsk
 					case xml::ContentType::ProcessingInstruction:
 					{
 						content.instruction = std::make_unique<xml::ProcessingInstruction>();
-						DSKFMT_CALL(_readProcessingInstruction, *content.instruction, parsedSomething);
+						DSK_CALL(_readProcessingInstruction, *content.instruction, parsedSomething);
 
 						break;
 					}
@@ -260,16 +254,16 @@ namespace dsk
 					case xml::ContentType::Child:
 					{
 						xml::ElementTag trash;
-						DSKFMT_CALL(readElementTag, trash);
-						DSKFMT_CALL(readElementContent, content, xml::ContentType::EndOfElement);
+						DSK_CALL(readElementTag, trash);
+						DSK_CALL(readElementContent, content, xml::ContentType::EndOfElement);
 
 						break;
 					}
 					case xml::ContentType::CharData:
 					{
 						do {
-							DSKFMT_CALL(_stream->skipCharWhile, [](char x) { return x != '<'; }, skipCount);
-							DSKFMT_CALL(_readComment, parsedSomething);
+							DSKFMT_STREAM_CALL(skipCharWhile, [](char x) { return x != '<'; }, skipCount);
+							DSK_CALL(_readComment, parsedSomething);
 						} while (parsedSomething);
 
 						break;
@@ -277,7 +271,7 @@ namespace dsk
 					case xml::ContentType::ProcessingInstruction:
 					{
 						xml::ProcessingInstruction trash;
-						DSKFMT_CALL(_readProcessingInstruction, trash, parsedSomething);
+						DSK_CALL(_readProcessingInstruction, trash, parsedSomething);
 
 						break;
 					}
@@ -285,25 +279,21 @@ namespace dsk
 
 				// Read next content
 
-				DSKFMT_CALL(readElementContent, content, filter);
+				DSK_CALL(readElementContent, content, filter);
 			}
-
-			return _stream->getStatus();
 		}
 
-		const ruc::Status& XmlIStream::readEnding(xml::Ending& ending)
+		void XmlIStream::readEnding(xml::Ending& ending)
 		{
 			DSKFMT_BEGIN();
 
 			assert(_treeRead);
 
-			DSKFMT_CALL(_readPIsSpacesAndComments, ending.instructions);
+			DSK_CALL(_readPIsSpacesAndComments, ending.instructions);
 
 			_tags.clear();
 			_prologRead = false;
 			_treeRead = false;
-
-			return _stream->getStatus();
 		}
 
 		void XmlIStream::resetFormatState()
@@ -313,7 +303,7 @@ namespace dsk
 			_treeRead = false;
 		}
 
-		const ruc::Status& XmlIStream::_readPIsSpacesAndComments(std::vector<xml::ProcessingInstruction>& instructions)
+		void XmlIStream::_readPIsSpacesAndComments(std::vector<xml::ProcessingInstruction>& instructions)
 		{
 			DSKFMT_BEGIN();
 
@@ -323,48 +313,44 @@ namespace dsk
 			do {
 
 				do {
-					DSKFMT_CALL(_stream->skipCharWhile, isSpaceChar, skipCount);
-					DSKFMT_CALL(_readComment, parsedSomething);
+					DSKFMT_STREAM_CALL(skipCharWhile, isSpaceChar, skipCount);
+					DSK_CALL(_readComment, parsedSomething);
 				} while (parsedSomething);
 
 				instructions.emplace_back();
-				DSKFMT_CALL(_readProcessingInstruction, instructions.back(), parsedSomething);
+				DSK_CALL(_readProcessingInstruction, instructions.back(), parsedSomething);
 
 			} while (parsedSomething);
 
 			instructions.pop_back();
-
-			return _stream->getStatus();
 		}
 
-		const ruc::Status& XmlIStream::_readElement(xml::Element& element)
+		void XmlIStream::_readElement(xml::Element& element)
 		{
 			DSKFMT_BEGIN();
 
 			element.contents.clear();
 
-			DSKFMT_CALL(readElementTag, element.tag);
+			DSK_CALL(readElementTag, element.tag);
 
 			if (!element.tag.isEmpty)
 			{
 				element.contents.reserve(_singleBufferSize / sizeof(xml::ElementContent));
 				
 				element.contents.emplace_back();
-				DSKFMT_CALL(readElementContent, element.contents.back());
+				DSK_CALL(readElementContent, element.contents.back());
 				while (element.contents.back().type != xml::ContentType::EndOfElement)
 				{
 					element.contents.emplace_back();
-					DSKFMT_CALL(readElementContent, element.contents.back());
+					DSK_CALL(readElementContent, element.contents.back());
 				}
 				element.contents.pop_back();
 				
 				element.contents.shrink_to_fit();
 			}
-
-			return _stream->getStatus();
 		}
 
-		const ruc::Status& XmlIStream::_readDeclaration(std::optional<xml::Declaration>& declaration)
+		void XmlIStream::_readDeclaration(std::optional<xml::Declaration>& declaration)
 		{
 			DSKFMT_BEGIN();
 
@@ -375,47 +361,47 @@ namespace dsk
 
 			// Read '<?xml'
 
-			DSKFMT_CALL(_stream->read, buffer, 5);
+			DSKFMT_STREAM_CALL(read, buffer, 5);
 			if (!std::equal(buffer, buffer + 5, "<?xml"))
 			{
-				DSKFMT_CALL(_stream->unread, 5);
-				return _stream->getStatus();
+				DSKFMT_STREAM_CALL(unread, 5);
+				return;
 			}
 
 			declaration.emplace();
 
 			// Read version
 
-			DSKFMT_CALL(_stream->skipCharWhile, isSpaceChar, skipCount);
-			DSKFMT_CHECK(skipCount, "Expected spaces after '<?xml' but found none.");
-			DSKFMT_CALL(_stream->expect, "version", 7);
-			DSKFMT_CALL(_readEq);
+			DSKFMT_STREAM_CALL(skipCharWhile, isSpaceChar, skipCount);
+			DSK_CHECK(skipCount, "Expected spaces after '<?xml' but found none.");
+			DSKFMT_STREAM_CALL(expect, "version", 7);
+			DSK_CALL(_readEq);
 
-			DSKFMT_CALL(_stream->read, buffer[0]);
-			DSKFMT_CHECK(buffer[0] == '"' || buffer[0] == '\'', std::format("Expected ''' or '\"'. Instead, got '{}'.", buffer[0]));
+			DSKFMT_STREAM_CALL(read, buffer[0]);
+			DSK_CHECK(buffer[0] == '"' || buffer[0] == '\'', std::format("Expected ''' or '\"'. Instead, got '{}'.", buffer[0]));
 
-			DSKFMT_CALL(_stream->expect, "1.", 2);
+			DSKFMT_STREAM_CALL(expect, "1.", 2);
 			declaration->versionMajor = 1;
-			DSKFMT_CALL(_stream->readAsciiNumber, declaration->versionMinor);
+			DSKFMT_STREAM_CALL(readAsciiNumber, declaration->versionMinor);
 
-			DSKFMT_CALL(_stream->expect, buffer[0]);
+			DSKFMT_STREAM_CALL(expect, buffer[0]);
 
 			// Read encoding
 
-			DSKFMT_CALL(_stream->skipCharWhile, isSpaceChar, skipCount);
+			DSKFMT_STREAM_CALL(skipCharWhile, isSpaceChar, skipCount);
 			if (skipCount)
 			{
-				DSKFMT_CALL(_stream->read, buffer[0]);
+				DSKFMT_STREAM_CALL(read, buffer[0]);
 				if (buffer[0] == 'e')
 				{
 					declaration->encoding.emplace();
 
-					DSKFMT_CALL(_stream->expect, "ncoding", 7);
-					DSKFMT_CALL(_readEq);
-					DSKFMT_CALL(_stream->read, buffer[0]);
-					DSKFMT_CHECK(buffer[0] == '"' || buffer[0] == '\'', std::format("Expected ''' or '\"'. Instead, got '{}'.", buffer[0]));
-					DSKFMT_CALL(_readEncName, declaration->encoding.value());
-					DSKFMT_CALL(_stream->expect, buffer[0]);
+					DSKFMT_STREAM_CALL(expect, "ncoding", 7);
+					DSK_CALL(_readEq);
+					DSKFMT_STREAM_CALL(read, buffer[0]);
+					DSK_CHECK(buffer[0] == '"' || buffer[0] == '\'', std::format("Expected ''' or '\"'. Instead, got '{}'.", buffer[0]));
+					DSK_CALL(_readEncName, declaration->encoding.value());
+					DSKFMT_STREAM_CALL(expect, buffer[0]);
 				}
 				else
 				{
@@ -425,19 +411,19 @@ namespace dsk
 
 			// Read standalone
 
-			DSKFMT_CALL(_stream->skipCharWhile, isSpaceChar, skipCount);
+			DSKFMT_STREAM_CALL(skipCharWhile, isSpaceChar, skipCount);
 			if (skipCount)
 			{
-				DSKFMT_CALL(_stream->read, buffer[0]);
+				DSKFMT_STREAM_CALL(read, buffer[0]);
 				if (buffer[0] == 's')
 				{
 					declaration->standalone.emplace(true);
 
-					DSKFMT_CALL(_stream->expect, "tandalone", 9);
-					DSKFMT_CALL(_readEq);
+					DSKFMT_STREAM_CALL(expect, "tandalone", 9);
+					DSK_CALL(_readEq);
 					std::string value;
-					DSKFMT_CALL(_readAttValue, value);
-					DSKFMT_CHECK(value == "no" || value == "yes", std::format("Standalone can only take values 'yes' and 'no'. Instead, got '{}'.", value));
+					DSK_CALL(_readAttValue, value);
+					DSK_CHECK(value == "no" || value == "yes", std::format("Standalone can only take values 'yes' and 'no'. Instead, got '{}'.", value));
 					declaration->standalone = (value == "yes");
 				}
 				else
@@ -448,13 +434,11 @@ namespace dsk
 
 			// Read '?>'
 
-			DSKFMT_CALL(_stream->skipCharWhile, isSpaceChar, skipCount);
-			DSKFMT_CALL(_stream->expect, "?>", 2);
-
-			return _stream->getStatus();
+			DSKFMT_STREAM_CALL(skipCharWhile, isSpaceChar, skipCount);
+			DSKFMT_STREAM_CALL(expect, "?>", 2);
 		}
 
-		const ruc::Status& XmlIStream::_readDoctype(std::optional<xml::Doctype>& doctype)
+		void XmlIStream::_readDoctype(std::optional<xml::Doctype>& doctype)
 		{
 			DSKFMT_BEGIN();
 
@@ -465,31 +449,29 @@ namespace dsk
 
 			// Read '<!DOCTYPE'
 
-			DSKFMT_CALL(_stream->read, buffer, 9);
+			DSKFMT_STREAM_CALL(read, buffer, 9);
 			if (!std::equal(buffer, buffer + 9, "<!DOCTYPE"))
 			{
-				DSKFMT_CALL(_stream->unread, 9);
-				return _stream->getStatus();
+				DSKFMT_STREAM_CALL(unread, 9);
+				return;
 			}
 
 			doctype.emplace();
 
 			// Read name
 
-			DSKFMT_CALL(_stream->skipCharWhile, isSpaceChar, skipCount);
-			DSKFMT_CHECK(skipCount, "Expected space after '<!DOCTYPE' but found no space.");
-			DSKFMT_CALL(_readName, doctype->name);
-			DSKFMT_CHECK(!doctype->name.empty(), "Error while parsing doctype name.");
+			DSKFMT_STREAM_CALL(skipCharWhile, isSpaceChar, skipCount);
+			DSK_CHECK(skipCount, "Expected space after '<!DOCTYPE' but found no space.");
+			DSK_CALL(_readName, doctype->name);
+			DSK_CHECK(!doctype->name.empty(), "Error while parsing doctype name.");
 
 			// Read '>'
 
-			DSKFMT_CALL(_stream->skipCharWhile, isSpaceChar, skipCount);
-			DSKFMT_CALL(_stream->expect, '>');
-
-			return _stream->getStatus();
+			DSKFMT_STREAM_CALL(skipCharWhile, isSpaceChar, skipCount);
+			DSKFMT_STREAM_CALL(expect, '>');
 		}
 
-		const ruc::Status& XmlIStream::_readProcessingInstruction(xml::ProcessingInstruction& instruction, bool& parsedSomething)
+		void XmlIStream::_readProcessingInstruction(xml::ProcessingInstruction& instruction, bool& parsedSomething)
 		{
 			DSKFMT_BEGIN();
 
@@ -502,113 +484,103 @@ namespace dsk
 			if (_stream->eof())
 			{
 				parsedSomething = false;
-				return _stream->getStatus();
+				return;
 			}
 
 			// Read '<?'
 
-			DSKFMT_CALL(_stream->read, buffer, 2);
+			DSKFMT_STREAM_CALL(read, buffer, 2);
 			parsedSomething = (buffer[0] == '<' && buffer[1] == '?');
 			if (!parsedSomething)
 			{
-				DSKFMT_CALL(_stream->unread, 2);
-				return _stream->getStatus();
+				DSKFMT_STREAM_CALL(unread, 2);
+				return;
 			}
 
 			// Read target
 
-			DSKFMT_CALL(_readName, instruction.target);
-			DSKFMT_CHECK(!instruction.target.empty(), "Error while parsing processing instruction target.");
-			DSKFMT_CHECK(isPITarget(instruction.target), std::format("PI Target cannot starts with 'XML'. PI Target: '{}'.", instruction.target));
+			DSK_CALL(_readName, instruction.target);
+			DSK_CHECK(!instruction.target.empty(), "Error while parsing processing instruction target.");
+			DSK_CHECK(isPITarget(instruction.target), std::format("PI Target cannot starts with 'XML'. PI Target: '{}'.", instruction.target));
 
 			// Read instruction and '?>'
 
 			instruction.instruction.clear();
-			DSKFMT_CALL(_stream->skipCharWhile, isSpaceChar, skipCount);
+			DSKFMT_STREAM_CALL(skipCharWhile, isSpaceChar, skipCount);
 			if (skipCount)
 			{
 				auto conditionFunc = [&](char x) {
 					return !(*buffer == '?' && x == '>') && (*buffer = x, true);
 				};
 
-				DSKFMT_CALL(_stream->readCharWhile, conditionFunc, instruction.instruction);
-				DSKFMT_CHECK(!instruction.instruction.empty() && instruction.instruction.back() == '?', std::format("Encountered an unfinished processing instruction: '{}'", instruction.instruction));
+				DSKFMT_STREAM_CALL(readCharWhile, conditionFunc, instruction.instruction);
+				DSK_CHECK(!instruction.instruction.empty() && instruction.instruction.back() == '?', std::format("Encountered an unfinished processing instruction: '{}'", instruction.instruction));
 				instruction.instruction.pop_back();
-				DSKFMT_CALL(_stream->expect, '>');
+				DSKFMT_STREAM_CALL(expect, '>');
 			}
-
-			return _stream->getStatus();
 		}
 
-		const ruc::Status& XmlIStream::_readEq()
+		void XmlIStream::_readEq()
 		{
 			DSKFMT_BEGIN();
 
 			uint64_t skipCount;
 
-			DSKFMT_CALL(_stream->skipCharWhile, isSpaceChar, skipCount);
-			DSKFMT_CALL(_stream->expect, '=');
-			DSKFMT_CALL(_stream->skipCharWhile, isSpaceChar, skipCount);
-
-			return _stream->getStatus();
+			DSKFMT_STREAM_CALL(skipCharWhile, isSpaceChar, skipCount);
+			DSKFMT_STREAM_CALL(expect, '=');
+			DSKFMT_STREAM_CALL(skipCharWhile, isSpaceChar, skipCount);
 		}
 
-		const ruc::Status& XmlIStream::_readEncName(std::string& name)
+		void XmlIStream::_readEncName(std::string& name)
 		{
 			DSKFMT_BEGIN();
 
 			char x;
 
-			DSKFMT_CALL(_stream->read, x);
+			DSKFMT_STREAM_CALL(read, x);
 			if (!isEncNameStartChar(x))
 			{
 				_stream->unread(1);
-				return _stream->getStatus();
+				return;
 			}
 			name.push_back(x);
 
-			DSKFMT_CALL(_stream->readCharWhile, isEncNameChar, name);
-
-			return _stream->getStatus();
+			DSKFMT_STREAM_CALL(readCharWhile, isEncNameChar, name);
 		}
 
-		const ruc::Status& XmlIStream::_readName(std::string& name)
+		void XmlIStream::_readName(std::string& name)
 		{
 			DSKFMT_BEGIN();
 
 			char x;
 
-			DSKFMT_CALL(_stream->read, x);
+			DSKFMT_STREAM_CALL(read, x);
 			if (!isNameStartChar(x))
 			{
 				_stream->unread(1);
-				return _stream->getStatus();
+				return;
 			}
 			name.push_back(x);
 
-			DSKFMT_CALL(_stream->readCharWhile, isNameChar, name);
-
-			return _stream->getStatus();
+			DSKFMT_STREAM_CALL(readCharWhile, isNameChar, name);
 		}
 
-		const ruc::Status& XmlIStream::_readAttValue(std::string& value)
+		void XmlIStream::_readAttValue(std::string& value)
 		{
 			DSKFMT_BEGIN();
 
 			char openChar;
 
-			DSKFMT_CALL(_stream->read, openChar);
-			DSKFMT_CHECK(openChar == '\'' || openChar == '"', std::format("Expected ''' or '\"', but instead got '{}'.", openChar));
+			DSKFMT_STREAM_CALL(read, openChar);
+			DSK_CHECK(openChar == '\'' || openChar == '"', std::format("Expected ''' or '\"', but instead got '{}'.", openChar));
 
 			// TODO: '&' can appear in the attribute value, but it MUST be a ref, not just any '&'
-			DSKFMT_CALL(_stream->readCharWhile, [&](char x) { return x != '<' && x != openChar; }, value);
+			DSKFMT_STREAM_CALL(readCharWhile, [&](char x) { return x != '<' && x != openChar; }, value);
 
-			DSKFMT_CALL(_stream->expect, openChar);
-
-			return _stream->getStatus();
+			DSKFMT_STREAM_CALL(expect, openChar);
 		}
 
-		const ruc::Status& XmlIStream::_readComment(bool& parsedSomething)
+		void XmlIStream::_readComment(bool& parsedSomething)
 		{
 			DSKFMT_BEGIN();
 
@@ -617,17 +589,17 @@ namespace dsk
 			if (_stream->eof())
 			{
 				parsedSomething = false;
-				return _stream->getStatus();
+				return;
 			}
 
 			// Read "<!--"
 
-			DSKFMT_CALL(_stream->read, buffer, 4);
+			DSKFMT_STREAM_CALL(read, buffer, 4);
 			parsedSomething = std::equal(buffer, buffer + 4, "<!--");
 			if (!parsedSomething)
 			{
-				DSKFMT_CALL(_stream->unread, 4);
-				return _stream->getStatus();
+				DSKFMT_STREAM_CALL(unread, 4);
+				return;
 			}
 
 			// Search for "-->"
@@ -637,9 +609,7 @@ namespace dsk
 				return !(buffer[0] == '-' && buffer[1] == '-' && x == '>') && (buffer[0] = buffer[1], buffer[1] = x, true);
 			};
 
-			DSKFMT_CALL(_stream->skipCharWhile, conditionFunc, skipCount);
-
-			return _stream->getStatus();
+			DSKFMT_STREAM_CALL(skipCharWhile, conditionFunc, skipCount);
 		}
 
 
@@ -731,20 +701,18 @@ namespace dsk
 		{
 		}
 
-		const ruc::Status& XmlOStream::writeFile(const xml::File& file)
+		void XmlOStream::writeFile(const xml::File& file)
 		{
 			DSKFMT_BEGIN();
 
 			assert(!_prologWritten);
 
-			DSKFMT_CALL(writeProlog, file.prolog);
-			DSKFMT_CALL(_writeElement, file.root);
-			DSKFMT_CALL(writeEnding, file.ending);
-
-			return _stream->getStatus();
+			DSK_CALL(writeProlog, file.prolog);
+			DSK_CALL(_writeElement, file.root);
+			DSK_CALL(writeEnding, file.ending);
 		}
 
-		const ruc::Status& XmlOStream::writeProlog(const xml::Prolog& prolog)
+		void XmlOStream::writeProlog(const xml::Prolog& prolog)
 		{
 			DSKFMT_BEGIN();
 
@@ -752,25 +720,23 @@ namespace dsk
 
 			if (prolog.declaration.has_value())
 			{
-				DSKFMT_CALL(_writeDeclaration, prolog.declaration.value());
+				DSK_CALL(_writeDeclaration, prolog.declaration.value());
 			}
 
 			if (prolog.doctype.has_value())
 			{
-				DSKFMT_CALL(_writeDoctype, prolog.doctype.value());
+				DSK_CALL(_writeDoctype, prolog.doctype.value());
 			}
 
 			for (const xml::ProcessingInstruction& instruction : prolog.instructions)
 			{
-				DSKFMT_CALL(_writeProcessingInstruction, instruction);
+				DSK_CALL(_writeProcessingInstruction, instruction);
 			}
 
 			_prologWritten = true;
-
-			return _stream->getStatus();
 		}
 
-		const ruc::Status& XmlOStream::writeElementTag(const xml::ElementTag& tag)
+		void XmlOStream::writeElementTag(const xml::ElementTag& tag)
 		{
 			DSKFMT_BEGIN();
 
@@ -779,29 +745,27 @@ namespace dsk
 
 			assert(isName(tag.name));
 
-			DSKFMT_CALL(_stream->write, '<');
-			DSKFMT_CALL(_stream->write, tag.name.data(), tag.name.size());
+			DSKFMT_STREAM_CALL(write, '<');
+			DSKFMT_STREAM_CALL(write, tag.name.data(), tag.name.size());
 
 			for (const std::pair<std::string, std::string>& attribute : tag.attributes)
 			{
-				DSKFMT_CALL(_stream->write, ' ');
-				DSKFMT_CALL(_writeAttribute, attribute);
+				DSKFMT_STREAM_CALL(write, ' ');
+				DSK_CALL(_writeAttribute, attribute);
 			}
 
 			if (tag.isEmpty)
 			{
-				DSKFMT_CALL(_stream->write, '/');
+				DSKFMT_STREAM_CALL(write, '/');
 			}
 			else
 			{
 				_tags.push_back(tag.name);
 			}
-			DSKFMT_CALL(_stream->write, '>');
-
-			return _stream->getStatus();
+			DSKFMT_STREAM_CALL(write, '>');
 		}
 
-		const ruc::Status& XmlOStream::writeElementContent(const xml::ElementContent& content)
+		void XmlOStream::writeElementContent(const xml::ElementContent& content)
 		{
 			DSKFMT_BEGIN();
 
@@ -816,9 +780,9 @@ namespace dsk
 					assert(!content.charData);
 					assert(!content.instruction);
 
-					DSKFMT_CALL(_stream->write, "</", 2);
-					DSKFMT_CALL(_stream->write, _tags.back().data(), _tags.back().size());
-					DSKFMT_CALL(_stream->write, '>');
+					DSKFMT_STREAM_CALL(write, "</", 2);
+					DSKFMT_STREAM_CALL(write, _tags.back().data(), _tags.back().size());
+					DSKFMT_STREAM_CALL(write, '>');
 
 					_tags.pop_back();
 					if (_tags.empty())
@@ -834,7 +798,7 @@ namespace dsk
 					assert(!content.charData);
 					assert(!content.instruction);
 
-					DSKFMT_CALL(writeElementTag, *content.childTag);
+					DSK_CALL(writeElementTag, *content.childTag);
 
 					break;
 				}
@@ -844,7 +808,7 @@ namespace dsk
 					assert(!content.charData);
 					assert(!content.instruction);
 
-					DSKFMT_CALL(_writeElement, *content.child);
+					DSK_CALL(_writeElement, *content.child);
 
 					break;
 				}
@@ -857,7 +821,7 @@ namespace dsk
 					assert(std::find(content.charData->begin(), content.charData->end(), '<') == content.charData->end());
 					// TODO: assert(std::find(content.charData.begin(), content.charData.end(), '&') == content.charData.end());
 
-					DSKFMT_CALL(_stream->write, content.charData->data(), content.charData->size());
+					DSKFMT_STREAM_CALL(write, content.charData->data(), content.charData->size());
 
 					break;
 				}
@@ -867,7 +831,7 @@ namespace dsk
 					assert(!content.child);
 					assert(!content.charData);
 
-					DSKFMT_CALL(_writeProcessingInstruction, *content.instruction);
+					DSK_CALL(_writeProcessingInstruction, *content.instruction);
 
 					break;
 				}
@@ -876,11 +840,9 @@ namespace dsk
 					assert(false);
 				}
 			}
-
-			return _stream->getStatus();
 		}
 
-		const ruc::Status& XmlOStream::writeEnding(const xml::Ending& ending)
+		void XmlOStream::writeEnding(const xml::Ending& ending)
 		{
 			DSKFMT_BEGIN();
 
@@ -888,14 +850,12 @@ namespace dsk
 
 			for (const xml::ProcessingInstruction& instruction : ending.instructions)
 			{
-				DSKFMT_CALL(_writeProcessingInstruction, instruction);
+				DSK_CALL(_writeProcessingInstruction, instruction);
 			}
 
 			_tags.clear();
 			_prologWritten = false;
 			_treeWritten = false;
-
-			return _stream->getStatus();
 		}
 
 		void XmlOStream::resetFormatState()
@@ -905,103 +865,95 @@ namespace dsk
 			_treeWritten = false;
 		}
 
-		const ruc::Status& XmlOStream::_writeDeclaration(const xml::Declaration& declaration)
+		void XmlOStream::_writeDeclaration(const xml::Declaration& declaration)
 		{
 			DSKFMT_BEGIN();
 
 			assert(declaration.versionMajor == 1);
 			assert(!declaration.encoding.has_value() || isEncName(declaration.encoding.value()));
 
-			DSKFMT_CALL(_stream->write, "<?xml version='1.", 17);
-			DSKFMT_CALL(_stream->writeAsciiNumber, declaration.versionMinor);
-			DSKFMT_CALL(_stream->write, '\'');
+			DSKFMT_STREAM_CALL(write, "<?xml version='1.", 17);
+			DSKFMT_STREAM_CALL(writeAsciiNumber, declaration.versionMinor);
+			DSKFMT_STREAM_CALL(write, '\'');
 
 			if (declaration.encoding.has_value())
 			{
-				DSKFMT_CALL(_stream->write, " encoding='", 11);
-				DSKFMT_CALL(_stream->write, declaration.encoding->data(), declaration.encoding->size());
-				DSKFMT_CALL(_stream->write, '\'');
+				DSKFMT_STREAM_CALL(write, " encoding='", 11);
+				DSKFMT_STREAM_CALL(write, declaration.encoding->data(), declaration.encoding->size());
+				DSKFMT_STREAM_CALL(write, '\'');
 			}
 
 			if (declaration.standalone.has_value())
 			{
 				if (declaration.standalone.value())
 				{
-					DSKFMT_CALL(_stream->write, " standalone='yes'", 17);
+					DSKFMT_STREAM_CALL(write, " standalone='yes'", 17);
 				}
 				else
 				{
-					DSKFMT_CALL(_stream->write, " standalone='no'", 16);
+					DSKFMT_STREAM_CALL(write, " standalone='no'", 16);
 				}
 			}
 
-			DSKFMT_CALL(_stream->write, "?>", 2);
-
-			return _stream->getStatus();
+			DSKFMT_STREAM_CALL(write, "?>", 2);
 		}
 
-		const ruc::Status& XmlOStream::_writeDoctype(const xml::Doctype& doctype)
+		void XmlOStream::_writeDoctype(const xml::Doctype& doctype)
 		{
 			DSKFMT_BEGIN();
 
 			assert(isName(doctype.name));
 
-			DSKFMT_CALL(_stream->write, "<!DOCTYPE ", 10);
-			DSKFMT_CALL(_stream->write, doctype.name.data(), doctype.name.size());
-			DSKFMT_CALL(_stream->write, '>');
-
-			return _stream->getStatus();
+			DSKFMT_STREAM_CALL(write, "<!DOCTYPE ", 10);
+			DSKFMT_STREAM_CALL(write, doctype.name.data(), doctype.name.size());
+			DSKFMT_STREAM_CALL(write, '>');
 		}
 
-		const ruc::Status& XmlOStream::_writeProcessingInstruction(const xml::ProcessingInstruction& instruction)
+		void XmlOStream::_writeProcessingInstruction(const xml::ProcessingInstruction& instruction)
 		{
 			DSKFMT_BEGIN();
 
 			assert(isPITarget(instruction.target));
 			assert(instruction.instruction.find("<?") == std::string::npos);
 
-			DSKFMT_CALL(_stream->write, "<?", 2);
-			DSKFMT_CALL(_stream->write, instruction.target.data(), instruction.target.size());
-			DSKFMT_CALL(_stream->write, ' ');
-			DSKFMT_CALL(_stream->write, instruction.instruction.data(), instruction.instruction.size());
-			DSKFMT_CALL(_stream->write, "?>", 2);
-
-			return _stream->getStatus();
+			DSKFMT_STREAM_CALL(write, "<?", 2);
+			DSKFMT_STREAM_CALL(write, instruction.target.data(), instruction.target.size());
+			DSKFMT_STREAM_CALL(write, ' ');
+			DSKFMT_STREAM_CALL(write, instruction.instruction.data(), instruction.instruction.size());
+			DSKFMT_STREAM_CALL(write, "?>", 2);
 		}
 
-		const ruc::Status& XmlOStream::_writeElement(const xml::Element& element)
+		void XmlOStream::_writeElement(const xml::Element& element)
 		{
 			DSKFMT_BEGIN();
 
 			assert(!element.tag.isEmpty || element.contents.empty());
 
-			DSKFMT_CALL(writeElementTag, element.tag);
+			DSK_CALL(writeElementTag, element.tag);
 
 			for (const xml::ElementContent& content : element.contents)
 			{
 				assert(content.type != xml::ContentType::EndOfElement);
-				DSKFMT_CALL(writeElementContent, content);
+				DSK_CALL(writeElementContent, content);
 			}
 
 			if (!element.tag.isEmpty)
 			{
 				xml::ElementContent tagEnd;
 				tagEnd.type = xml::ContentType::EndOfElement;
-				DSKFMT_CALL(writeElementContent, tagEnd);
+				DSK_CALL(writeElementContent, tagEnd);
 			}
-
-			return _stream->getStatus();
 		}
 
-		const ruc::Status& XmlOStream::_writeAttribute(const std::pair<const std::string, std::string>& attribute)
+		void XmlOStream::_writeAttribute(const std::pair<const std::string, std::string>& attribute)
 		{
 			DSKFMT_BEGIN();
 
 			assert(isName(attribute.first));
 			assert(isAttValue(attribute.second));
 
-			DSKFMT_CALL(_stream->write, attribute.first.data(), attribute.first.size());
-			DSKFMT_CALL(_stream->write, '=');
+			DSKFMT_STREAM_CALL(write, attribute.first.data(), attribute.first.size());
+			DSKFMT_STREAM_CALL(write, '=');
 
 			char lim = '"';
 			if (std::find(attribute.second.begin(), attribute.second.end(), '"') != attribute.second.end())
@@ -1009,11 +961,9 @@ namespace dsk
 				lim = '\'';
 			}
 
-			DSKFMT_CALL(_stream->write, lim);
-			DSKFMT_CALL(_stream->write, attribute.second.data(), attribute.second.size());
-			DSKFMT_CALL(_stream->write, lim);
-
-			return _stream->getStatus();
+			DSKFMT_STREAM_CALL(write, lim);
+			DSKFMT_STREAM_CALL(write, attribute.second.data(), attribute.second.size());
+			DSKFMT_STREAM_CALL(write, lim);
 		}
 	}
 }

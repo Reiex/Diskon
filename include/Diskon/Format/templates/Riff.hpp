@@ -42,67 +42,61 @@ namespace dsk
 		}
 
 		template<typename TValue>
-		const ruc::Status& RiffIStream::readChunkData(TValue& value)
+		void RiffIStream::readChunkData(TValue& value)
 		{
 			DSKFMT_BEGIN();
 
 			assert(_readingData);
 
-			DSKFMT_CHECK(_remainingSizes.back()[1] >= sizeof(TValue), "Tried to read more data than contained in chunk size.");
+			DSK_CHECK(_remainingSizes.back()[1] >= sizeof(TValue), "Tried to read more data than contained in chunk size.");
 
-			DSKFMT_CALL(_stream->read, value);
+			DSKFMT_STREAM_CALL(read, value);
 
 			_remainingSizes.back()[1] -= sizeof(TValue);
 			if (_remainingSizes.back()[1] == 0)
 			{
-				DSKFMT_CALL(_readChunkEnd);
+				DSK_CALL(_readChunkEnd);
 			}
-
-			return _stream->getStatus();
 		}
 
 		template<typename TValue>
-		const ruc::Status& RiffIStream::readChunkData(TValue* values, uint32_t count)
+		void RiffIStream::readChunkData(TValue* values, uint32_t count)
 		{
 			DSKFMT_BEGIN();
 
 			assert(_readingData);
 
 			const uint32_t size = count * sizeof(TValue);
-			DSKFMT_CHECK(_remainingSizes.back()[1] >= size, "Tried to read more data than contained in chunk size.");
+			DSK_CHECK(_remainingSizes.back()[1] >= size, "Tried to read more data than contained in chunk size.");
 
-			DSKFMT_CALL(_stream->read, values, count);
+			DSKFMT_STREAM_CALL(read, values, count);
 
 			_remainingSizes.back()[1] -= size;
 			if (_remainingSizes.back()[1] == 0)
 			{
-				DSKFMT_CALL(_readChunkEnd);
+				DSK_CALL(_readChunkEnd);
 			}
-
-			return _stream->getStatus();
 		}
 
 		template<typename TValue>
-		const ruc::Status& RiffOStream::writeChunkData(const TValue& value)
+		void RiffOStream::writeChunkData(const TValue& value)
 		{
 			DSKFMT_BEGIN();
 
 			assert(_writingData);
 			assert(_remainingSizes.back()[1] >= sizeof(TValue));
 
-			DSKFMT_CALL(_stream->write, value);
+			DSKFMT_STREAM_CALL(write, value);
 
 			_remainingSizes.back()[1] -= sizeof(TValue);
 			if (_remainingSizes.back()[1] == 0)
 			{
-				DSKFMT_CALL(_writeChunkEnd);
+				DSK_CALL(_writeChunkEnd);
 			}
-
-			return _stream->getStatus();
 		}
 
 		template<typename TValue>
-		const ruc::Status& RiffOStream::writeChunkData(const TValue* values, uint32_t count)
+		void RiffOStream::writeChunkData(const TValue* values, uint32_t count)
 		{
 			DSKFMT_BEGIN();
 
@@ -111,15 +105,13 @@ namespace dsk
 			const uint32_t size = count * sizeof(TValue);
 			assert(_remainingSizes.back()[1] >= size);
 
-			DSKFMT_CALL(_stream->write, values, count);
+			DSKFMT_STREAM_CALL(write, values, count);
 
 			_remainingSizes.back()[1] -= size;
 			if (_remainingSizes.back()[1] == 0)
 			{
-				DSKFMT_CALL(_writeChunkEnd);
+				DSK_CALL(_writeChunkEnd);
 			}
-
-			return _stream->getStatus();
 		}
 	}
 }

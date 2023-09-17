@@ -85,7 +85,7 @@ namespace dsk
 				ObjIStream& operator=(const ObjIStream& stream) = delete;
 				ObjIStream& operator=(ObjIStream&& stream) = delete;
 
-				const ruc::Status& readFile(obj::File& file);
+				void readFile(obj::File& file);
 
 				~ObjIStream() = default;
 
@@ -93,15 +93,15 @@ namespace dsk
 
 				void resetFormatState() override final;
 
-				const ruc::Status& _readVertexPosition(obj::VertexPosition& position);
-				const ruc::Status& _readVertexTextureCoordinate(obj::VertexTextureCoordinate& texCoord);
-				const ruc::Status& _readVertexNormal(obj::VertexNormal& normal);
+				void _readVertexPosition(obj::VertexPosition& position);
+				void _readVertexTextureCoordinate(obj::VertexTextureCoordinate& texCoord);
+				void _readVertexNormal(obj::VertexNormal& normal);
 
-				const ruc::Status& _readPointCloud(const obj::File& file, obj::PointCloud& pointCloud);
-				const ruc::Status& _readLine(const obj::File& file, obj::Line& line);
-				const ruc::Status& _readFace(const obj::File& file, obj::Face& face);
+				void _readPointCloud(const obj::File& file, obj::PointCloud& pointCloud);
+				void _readLine(const obj::File& file, obj::Line& line);
+				void _readFace(const obj::File& file, obj::Face& face);
 
-				const ruc::Status& _readSlashSeparatedIndices(const uint64_t* sizes, uint64_t* indices, uint64_t count);
+				void _readSlashSeparatedIndices(const uint64_t* sizes, uint64_t* indices, uint64_t count);
 		};
 
 		class DSK_API ObjOStream : public FormatOStream
@@ -115,7 +115,7 @@ namespace dsk
 				ObjOStream& operator=(const ObjOStream& stream) = delete;
 				ObjOStream& operator=(ObjOStream&& stream) = delete;
 
-				const ruc::Status& writeFile(const obj::File& file);
+				void writeFile(const obj::File& file);
 
 				~ObjOStream() = default;
 
@@ -123,13 +123,13 @@ namespace dsk
 
 				void resetFormatState() override final;
 
-				const ruc::Status& _writeVertexPosition(const obj::VertexPosition& position);
-				const ruc::Status& _writeVertexTextureCoordinate(const obj::VertexTextureCoordinate& texCoord);
-				const ruc::Status& _writeVertexNormal(const obj::VertexNormal& normal);
+				void _writeVertexPosition(const obj::VertexPosition& position);
+				void _writeVertexTextureCoordinate(const obj::VertexTextureCoordinate& texCoord);
+				void _writeVertexNormal(const obj::VertexNormal& normal);
 
-				const ruc::Status& _writePointCloud(const obj::File& file, const obj::PointCloud& pointCloud);
-				const ruc::Status& _writeLine(const obj::File& file, const obj::Line& line);
-				const ruc::Status& _writeFace(const obj::File& file, const obj::Face& face);
+				void _writePointCloud(const obj::File& file, const obj::PointCloud& pointCloud);
+				void _writeLine(const obj::File& file, const obj::Line& line);
+				void _writeFace(const obj::File& file, const obj::Face& face);
 		};
 	}
 }

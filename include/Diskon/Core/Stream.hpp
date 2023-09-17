@@ -26,42 +26,41 @@ namespace dsk
 			IStream& operator=(IStream&& stream) = delete;
 
 
-			const ruc::Status& unread(uint64_t size);
-			const ruc::Status& skip(uint64_t size);
-			template<typename TValue> const ruc::Status& expect(const TValue& value);
-			template<typename TValue> const ruc::Status& expect(const TValue* values, uint64_t count);
-			template<typename TValue> const ruc::Status& read(TValue& value);
-			template<typename TValue> const ruc::Status& read(TValue* values, uint64_t count);
+			void unread(uint64_t size);
+			void skip(uint64_t size);
+			template<typename TValue> void expect(const TValue& value);
+			template<typename TValue> void expect(const TValue* values, uint64_t count);
+			template<typename TValue> void read(TValue& value);
+			template<typename TValue> void read(TValue* values, uint64_t count);
 
-			template<std::integral TValue> const ruc::Status& readAsciiNumber(TValue& value);
-			template<std::floating_point TValue> const ruc::Status& readAsciiNumber(TValue& value);
+			template<std::integral TValue> void readAsciiNumber(TValue& value);
+			template<std::floating_point TValue> void readAsciiNumber(TValue& value);
 
-			template<typename TConditionFunc> const ruc::Status& skipCharWhile(TConditionFunc conditionFunc, uint64_t& count);
-			template<typename TConditionFunc> const ruc::Status& readCharWhile(TConditionFunc conditionFunc, char* dst, uint64_t dstSize, uint64_t& count);
-			template<typename TConditionFunc> const ruc::Status& readCharWhile(TConditionFunc conditionFunc, std::string& dst);
-
-
-			const ruc::Status& bitUnread(uint64_t bitCount);
-			const ruc::Status& bitRead(bool& bit);
-			const ruc::Status& bitRead(uint8_t* data, uint64_t bitCount, uint8_t bitOffset = 0);
-
-			const ruc::Status& finishByte();
+			template<typename TConditionFunc> void skipCharWhile(TConditionFunc conditionFunc, uint64_t& count);
+			template<typename TConditionFunc> void readCharWhile(TConditionFunc conditionFunc, char* dst, uint64_t dstSize, uint64_t& count);
+			template<typename TConditionFunc> void readCharWhile(TConditionFunc conditionFunc, std::string& dst);
 
 
-			bool eof() const { return _cursor == _bufferEnd && _eof(_handle); }
+			void bitUnread(uint64_t bitCount);
+			void bitRead(bool& bit);
+			void bitRead(uint8_t* data, uint64_t bitCount, uint8_t bitOffset = 0);
 
-			void setByteEndianness(std::endian endianness)	{ _byteEndianness = endianness; }
-			std::endian getByteEndianness() const			{ return _byteEndianness; }
-			void setBitEndianness(std::endian endianness)	{ _bitEndianness = endianness; }
-			std::endian getBitEndianness() const			{ return _bitEndianness; }
-			ruc::Status& getStatus()						{ return _status; }
-			const ruc::Status& getStatus() const			{ return _status; }
+			void finishByte();
+
+
+			inline bool eof() const;
+
+			constexpr void setByteEndianness(std::endian endianness);
+			constexpr std::endian getByteEndianness() const;
+			constexpr void setBitEndianness(std::endian endianness);
+			constexpr std::endian getBitEndianness() const;
+			constexpr const ruc::Status& getStatus() const;
 
 			~IStream();
 
 		private:
 
-			const ruc::Status& _refillBuffer(uint64_t size);
+			void _refillBuffer(uint64_t size);
 
 			ruc::Status _status;
 
@@ -98,28 +97,27 @@ namespace dsk
 			OStream& operator=(OStream&& stream) = delete;
 
 
-			template<typename TValue> const ruc::Status& write(const TValue& value);
-			template<typename TValue> const ruc::Status& write(const TValue* values, uint64_t count);
+			template<typename TValue> void write(const TValue& value);
+			template<typename TValue> void write(const TValue* values, uint64_t count);
 
-			template<std::integral TValue> const ruc::Status& writeAsciiNumber(TValue value);
-			template<std::floating_point TValue> const ruc::Status& writeAsciiNumber(TValue value);
-
-
-			const ruc::Status& bitWrite(bool bit);
-			const ruc::Status& bitWrite(const uint8_t* data, uint64_t bitCount, uint8_t bitOffset = 0);
-
-			const ruc::Status& finishByte(uint8_t padBits = 0);
+			template<std::integral TValue> void writeAsciiNumber(TValue value);
+			template<std::floating_point TValue> void writeAsciiNumber(TValue value);
 
 
-			const ruc::Status& flush();
+			void bitWrite(bool bit);
+			void bitWrite(const uint8_t* data, uint64_t bitCount, uint8_t bitOffset = 0);
+
+			void finishByte(uint8_t padBits = 0);
 
 
-			void setByteEndianness(std::endian endianness)	{ _byteEndianness = endianness; }
-			std::endian getByteEndianness() const			{ return _byteEndianness; }
-			void setBitEndianness(std::endian endianness)	{ _bitEndianness = endianness; }
-			std::endian getBitEndianness() const			{ return _bitEndianness; }
-			ruc::Status& getStatus()						{ return _status; }
-			const ruc::Status& getStatus() const			{ return _status; }
+			void flush();
+
+
+			constexpr void setByteEndianness(std::endian endianness);
+			constexpr std::endian getByteEndianness() const;
+			constexpr void setBitEndianness(std::endian endianness);
+			constexpr std::endian getBitEndianness() const;
+			constexpr const ruc::Status& getStatus() const;
 
 			~OStream() = default;
 
@@ -138,3 +136,6 @@ namespace dsk
 			std::endian _bitEndianness;
 	};
 }
+
+#define DSK_CHECK(condition, message)	RUC_CHECK(_status, RUC_VOID, condition, message)
+#define DSK_CALL(func, ...)				func(__VA_ARGS__); RUC_RELAY(_status, RUC_VOID)

@@ -31,22 +31,17 @@ namespace dsk
 		assert(keepSize != 0);
 	}
 
-	const ruc::Status& IStream::unread(uint64_t size)
+	void IStream::unread(uint64_t size)
 	{
 		assert(_status);
 		assert(_bitCursor == 0);
 
-		if (std::distance(_buffer, _cursor) < size)
-		{
-			return _status.setErrorMessage(__PRETTY_FUNCTION__, __LINE__, "Tried to unread too many bytes.");
-		}
+		DSK_CHECK(std::distance(_buffer, _cursor) >= size, "Tried to unread too many bytes.");
 
 		_cursor -= size;
-
-		return _status;
 	}
 
-	const ruc::Status& IStream::skip(uint64_t size)
+	void IStream::skip(uint64_t size)
 	{
 		assert(_status);
 		assert(_bitCursor == 0);
@@ -58,7 +53,7 @@ namespace dsk
 		else
 		{
 			size -= std::distance(_cursor, _bufferEnd);
-			while (size > _bufferSize && _refillBuffer(_bufferSize))
+			while (size > _bufferSize && (_refillBuffer(_bufferSize), _status))
 			{
 				size -= _bufferSize;
 			}
@@ -68,18 +63,13 @@ namespace dsk
 				return _status.relayErrorMessage(__PRETTY_FUNCTION__, __LINE__);
 			}
 
-			if (!_refillBuffer(size))
-			{
-				return _status.relayErrorMessage(__PRETTY_FUNCTION__, __LINE__);
-			}
+			DSK_CALL(_refillBuffer, size);
 
 			_cursor = _bufferBeginBuffer + size;
 		}
-
-		return _status;
 	}
 
-	const ruc::Status& IStream::bitUnread(uint64_t bitCount)
+	void IStream::bitUnread(uint64_t bitCount)
 	{
 		assert(_status);
 
@@ -87,10 +77,7 @@ namespace dsk
 		const uint8_t remainingBits = bitCount & 7;
 
 		std::ptrdiff_t distance = std::distance(_buffer, _cursor);
-		if (distance < size || (distance == size && _bitCursor < remainingBits))
-		{
-			return _status.setErrorMessage(__PRETTY_FUNCTION__, __LINE__, "Tried to unread too many bits.");
-		}
+		DSK_CHECK(distance > size || (distance == size && _bitCursor >= remainingBits), "Tried to unread too many bits.");
 
 		_cursor -= size;
 		if (_bitCursor >= remainingBits)
@@ -102,11 +89,9 @@ namespace dsk
 			_bitCursor = _bitCursor + 8 - remainingBits;
 			--_cursor;
 		}
-
-		return _status;
 	}
 
-	const ruc::Status& IStream::bitRead(bool& bit)
+	void IStream::bitRead(bool& bit)
 	{
 		assert(_status);
 
@@ -130,10 +115,7 @@ namespace dsk
 		}
 		else
 		{
-			if (!_refillBuffer(1))
-			{
-				return _status.relayErrorMessage(__PRETTY_FUNCTION__, __LINE__);
-			}
+			DSK_CALL(_refillBuffer, 1);
 
 			_cursor = _bufferBeginBuffer;
 
@@ -148,11 +130,9 @@ namespace dsk
 
 			_bitCursor = 1;
 		}
-
-		return _status;
 	}
 
-	const ruc::Status& IStream::bitRead(uint8_t* data, uint64_t bitCount, uint8_t bitOffset)
+	void IStream::bitRead(uint8_t* data, uint64_t bitCount, uint8_t bitOffset)
 	{
 		assert(_status);
 
@@ -185,10 +165,7 @@ namespace dsk
 
 			while (remainingSize >= _bufferSize)
 			{
-				if (!_refillBuffer(_bufferSize))
-				{
-					return _status.relayErrorMessage(__PRETTY_FUNCTION__, __LINE__);
-				}
+				DSK_CALL(_refillBuffer, _bufferSize);
 
 				bitcpy(_bufferBeginBuffer, 0, data, bitOffset, _bufferSize, 0, _bitEndianness);
 
@@ -196,21 +173,16 @@ namespace dsk
 				remainingSize -= _bufferSize;
 			}
 
-			if (!_refillBuffer(remainingSize + (remainingTrailingBits != 0)))
-			{
-				return _status.relayErrorMessage(__PRETTY_FUNCTION__, __LINE__);
-			}
+			DSK_CALL(_refillBuffer, remainingSize + (remainingTrailingBits != 0));
 
 			bitcpy(_bufferBeginBuffer, 0, data, bitOffset, remainingSize, remainingTrailingBits, _bitEndianness);
 
 			_cursor = _bufferBeginBuffer + remainingSize;
 			_bitCursor = remainingTrailingBits;
 		}
-
-		return _status;
 	}
 
-	const ruc::Status& IStream::finishByte()
+	void IStream::finishByte()
 	{
 		assert(_status);
 		
@@ -219,8 +191,6 @@ namespace dsk
 			_bitCursor = 0;
 			++_cursor;
 		}
-
-		return _status;
 	}
 
 	IStream::~IStream()
@@ -228,17 +198,14 @@ namespace dsk
 		delete[] _buffer;
 	}
 
-	const ruc::Status& IStream::_refillBuffer(uint64_t size)
+	void IStream::_refillBuffer(uint64_t size)
 	{
 		assert(_status);
 		assert(size != 0);
 
 		// Check EOF was not already reached - Because this function will ALWAYS need to read more
 
-		if (_bufferEnd != _bufferBeginBuffer + _bufferSize)
-		{
-			return _status.setErrorMessage(__PRETTY_FUNCTION__, __LINE__, "Tried to read more than what can be read from handle.");
-		}
+		DSK_CHECK(_bufferEnd == _bufferBeginBuffer + _bufferSize, "Tried to read more than what can be read from handle.");
 
 		// Retrieve "keep data" - Use std::copy instead of std::copy_n because it handles the possible overlap
 
@@ -249,19 +216,11 @@ namespace dsk
 		const uint64_t readSize = _read(_handle, _bufferBeginBuffer, _bufferSize);
 		if (readSize != _bufferSize)
 		{
-			if (!_eof(_handle))
-			{
-				return _status.setErrorMessage(__PRETTY_FUNCTION__, __LINE__, "Error while reading from handle.");
-			}
-			else if (readSize < size)
-			{
-				return _status.setErrorMessage(__PRETTY_FUNCTION__, __LINE__, "Tried to read more than what can be read from handle.");
-			}
+			DSK_CHECK(_eof(_handle), "Error while reading from handle.");
+			DSK_CHECK(readSize >= size, "Tried to read more than what can be read from handle.");
 
 			_bufferEnd = _bufferBeginBuffer + readSize;
 		}
-
-		return _status;
 	}
 
 
@@ -279,7 +238,7 @@ namespace dsk
 		assert(bufferSize != 0);
 	}
 
-	const ruc::Status& OStream::bitWrite(bool bit)
+	void OStream::bitWrite(bool bit)
 	{
 		assert(_status);
 
@@ -304,11 +263,7 @@ namespace dsk
 		else
 		{
 			const uint64_t writeSize = _write(_handle, _buffer.data(), _cursor);
-			if (writeSize != _cursor)
-			{
-				return _status.setErrorMessage(__PRETTY_FUNCTION__, __LINE__, "Error while writing to handle.");
-			}
-
+			DSK_CHECK(writeSize == _cursor, "Error while writing to handle.");
 
 			if (_bitEndianness == std::endian::little)
 			{
@@ -322,11 +277,9 @@ namespace dsk
 			_cursor = 0;
 			_bitCursor = 1;
 		}
-
-		return _status;
 	}
 
-	const ruc::Status& OStream::bitWrite(const uint8_t* data, uint64_t bitCount, uint8_t bitOffset)
+	void OStream::bitWrite(const uint8_t* data, uint64_t bitCount, uint8_t bitOffset)
 	{
 		assert(_status);
 
@@ -360,11 +313,8 @@ namespace dsk
 			while (remainingSize >= _buffer.size())
 			{
 				const uint64_t writeSize = _write(_handle, _buffer.data(), _buffer.size());
-				if (writeSize != _buffer.size())
-				{
-					return _status.setErrorMessage(__PRETTY_FUNCTION__, __LINE__, "Error while writing to handle.");
-				}
-
+				DSK_CHECK(writeSize == _buffer.size(), "Error while writing to handle.");
+				
 				bitcpy(data, bitOffset, _buffer.data(), 0, _buffer.size(), 0, _bitEndianness);
 
 				data += _buffer.size();
@@ -372,21 +322,16 @@ namespace dsk
 			}
 
 			const uint64_t writeSize = _write(_handle, _buffer.data(), _buffer.size());
-			if (writeSize != _buffer.size())
-			{
-				return _status.setErrorMessage(__PRETTY_FUNCTION__, __LINE__, "Error while writing to handle.");
-			}
+			DSK_CHECK(writeSize == _buffer.size(), "Error while writing to handle.");
 
 			bitcpy(data, bitOffset, _buffer.data(), 0, remainingSize, remainingTrailingBits, _bitEndianness);
 
 			_cursor = remainingSize;
 			_bitCursor = remainingTrailingBits;
 		}
-
-		return _status;
 	}
 
-	const ruc::Status& OStream::finishByte(uint8_t padBits)
+	void OStream::finishByte(uint8_t padBits)
 	{
 		assert(_status);
 
@@ -409,11 +354,9 @@ namespace dsk
 			_bitCursor = 0;
 			++_cursor;
 		}
-
-		return _status;
 	}
 
-	const ruc::Status& OStream::flush()
+	void OStream::flush()
 	{
 		assert(_status);
 		assert(_bitCursor == 0);
@@ -421,14 +364,9 @@ namespace dsk
 		if (_cursor != 0)
 		{
 			const uint64_t writeSize = _write(_handle, _buffer.data(), _cursor);
-			if (writeSize != _cursor)
-			{
-				return _status.setErrorMessage(__PRETTY_FUNCTION__, __LINE__, "Error while writing to handle.");
-			}
+			DSK_CHECK(writeSize == _cursor, "Error while writing to handle.");
 
 			_cursor = 0;
 		}
-
-		return _status;
 	}
 }

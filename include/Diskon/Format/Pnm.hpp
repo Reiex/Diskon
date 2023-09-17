@@ -51,9 +51,9 @@ namespace dsk
 				PnmIStream& operator=(const PnmIStream& stream) = delete;
 				PnmIStream& operator=(PnmIStream&& stream) = delete;
 
-				const ruc::Status& readFile(pnm::File& file);
-				const ruc::Status& readHeader(pnm::Header& header);
-				const ruc::Status& readPixels(uint16_t* samples, uint64_t pixelCount);
+				void readFile(pnm::File& file);
+				void readHeader(pnm::Header& header);
+				void readPixels(uint16_t* samples, uint64_t pixelCount);
 
 				~PnmIStream() = default;
 
@@ -62,8 +62,8 @@ namespace dsk
 				void setStreamState() override final;
 				void resetFormatState() override final;
 
-				const ruc::Status& _readHeaderChar(char& value);
-				const ruc::Status& _readHeaderSpaces();
+				void _readHeaderChar(char& value);
+				void _readHeaderSpaces();
 
 
 				pnm::Header _header;
@@ -84,9 +84,9 @@ namespace dsk
 				PnmOStream& operator=(const PnmOStream& stream) = delete;
 				PnmOStream& operator=(PnmOStream&& stream) = delete;
 
-				const ruc::Status& writeFile(const pnm::File& file);
-				const ruc::Status& writeHeader(const pnm::Header& header);
-				const ruc::Status& writePixels(const uint16_t* samples, uint64_t pixelCount);
+				void writeFile(const pnm::File& file);
+				void writeHeader(const pnm::Header& header);
+				void writePixels(const uint16_t* samples, uint64_t pixelCount);
 
 				~PnmOStream() = default;
 

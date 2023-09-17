@@ -53,11 +53,11 @@ namespace dsk
 				DeflateIStream& operator=(const DeflateIStream& stream) = delete;
 				DeflateIStream& operator=(DeflateIStream&& stream) = delete;
 		
-				const ruc::Status& readFile(deflate::File& file);
-				const ruc::Status& readBlock(deflate::Block& block);
-				const ruc::Status& readBlockHeader(deflate::BlockHeader& header);
-				const ruc::Status& readBlockData(uint8_t* data, uint64_t size, uint64_t& sizeRead);
-				const ruc::Status& readBlockEnd();
+				void readFile(deflate::File& file);
+				void readBlock(deflate::Block& block);
+				void readBlockHeader(deflate::BlockHeader& header);
+				void readBlockData(uint8_t* data, uint64_t size, uint64_t& sizeRead);
+				void readBlockEnd();
 		
 				~DeflateIStream();
 		
@@ -102,11 +102,11 @@ namespace dsk
 				DeflateOStream& operator=(const DeflateOStream& stream) = delete;
 				DeflateOStream& operator=(DeflateOStream&& stream) = delete;
 		
-				const ruc::Status& writeFile(const deflate::File& file);
-				const ruc::Status& writeBlock(const deflate::Block& block);
-				const ruc::Status& writeBlockHeader(const deflate::BlockHeader& header, uint16_t size = 0);
-				const ruc::Status& writeBlockData(const uint8_t* data, uint64_t size);
-				const ruc::Status& writeBlockEnd();
+				void writeFile(const deflate::File& file);
+				void writeBlock(const deflate::Block& block);
+				void writeBlockHeader(const deflate::BlockHeader& header, uint16_t size = 0);
+				void writeBlockData(const uint8_t* data, uint64_t size);
+				void writeBlockEnd();
 		
 				~DeflateOStream();
 		

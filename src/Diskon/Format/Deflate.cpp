@@ -86,7 +86,7 @@ namespace dsk
 			}
 		}
 		
-		const ruc::Status& DeflateIStream::readFile(deflate::File& file)
+		void DeflateIStream::readFile(deflate::File& file)
 		{
 			DSKFMT_BEGIN();
 			
@@ -97,13 +97,11 @@ namespace dsk
 		
 			do {
 				file.blocks.emplace_back();
-				DSKFMT_CALL(readBlock, file.blocks.back());
+				DSK_CALL(readBlock, file.blocks.back());
 			} while (!file.blocks.back().header.isFinal);
-		
-			return _stream->getStatus();
 		}
 		
-		const ruc::Status& DeflateIStream::readBlock(deflate::Block& block)
+		void DeflateIStream::readBlock(deflate::Block& block)
 		{
 			DSKFMT_BEGIN();
 		
@@ -113,7 +111,7 @@ namespace dsk
 		
 			// Read block header
 		
-			DSKFMT_CALL(readBlockHeader, block.header);
+			DSK_CALL(readBlockHeader, block.header);
 		
 			// Read block data
 		
@@ -121,18 +119,16 @@ namespace dsk
 			uint8_t buffer[bufferSize];
 			uint64_t sizeRead;
 			do {
-				DSKFMT_CALL(readBlockData, buffer, bufferSize, sizeRead);
+				DSK_CALL(readBlockData, buffer, bufferSize, sizeRead);
 				block.data.insert(block.data.end(), buffer, buffer + sizeRead);
 			} while (sizeRead == bufferSize);
 		
 			// Read block end
 		
-			DSKFMT_CALL(readBlockEnd);
-		
-			return _stream->getStatus();
+			DSK_CALL(readBlockEnd);
 		}
 		
-		const ruc::Status& DeflateIStream::readBlockHeader(deflate::BlockHeader& header)
+		void DeflateIStream::readBlockHeader(deflate::BlockHeader& header)
 		{
 			DSKFMT_BEGIN();
 		
@@ -144,11 +140,11 @@ namespace dsk
 		
 			_readingBlock = true;
 		
-			DSKFMT_CALL(_stream->bitRead, _readingLastBlock);
+			DSKFMT_STREAM_CALL(bitRead, _readingLastBlock);
 			header.isFinal = _readingLastBlock;
 
-			DSKFMT_CALL(_stream->bitRead, &buffer, 2);
-			DSKFMT_CHECK(buffer != 3, "Compression type cannot be 0b11.");
+			DSKFMT_STREAM_CALL(bitRead, &buffer, 2);
+			DSK_CHECK(buffer != 3, "Compression type cannot be 0b11.");
 			header.compressionType = static_cast<deflate::CompressionType>(buffer);
 		
 			// Read the rest of the header depending on the compression type
@@ -163,13 +159,13 @@ namespace dsk
 				{
 					_currentBlockCompressed = false;
 		
-					DSKFMT_CALL(_stream->finishByte);
+					DSKFMT_STREAM_CALL(finishByte);
 		
 					uint16_t nlen;
-					DSKFMT_CALL(_stream->read, _currentBlockRemainingSize);
-					DSKFMT_CALL(_stream->read, nlen);
+					DSKFMT_STREAM_CALL(read, _currentBlockRemainingSize);
+					DSKFMT_STREAM_CALL(read, nlen);
 		
-					DSKFMT_CHECK(_currentBlockRemainingSize == static_cast<uint16_t>(~nlen), "Block length check for non-compressed block failed.");
+					DSK_CHECK(_currentBlockRemainingSize == static_cast<uint16_t>(~nlen), "Block length check for non-compressed block failed.");
 		
 					break;
 				}
@@ -193,11 +189,11 @@ namespace dsk
 		
 					// Read additional header info (number of literal codes, distance codes, and code length codes)
 		
-					DSKFMT_CALL(_stream->bitRead, &buffer, 5);
+					DSKFMT_STREAM_CALL(bitRead, &buffer, 5);
 					hlit = buffer + 257;
-					DSKFMT_CALL(_stream->bitRead, &buffer, 5);
+					DSKFMT_STREAM_CALL(bitRead, &buffer, 5);
 					hdist = buffer + 1;
-					DSKFMT_CALL(_stream->bitRead, &buffer, 4);
+					DSKFMT_STREAM_CALL(bitRead, &buffer, 4);
 					const uint8_t hclen = buffer + 4;
 		
 					// Read code lengths for the code length alphabet and create the associated huffman decoder
@@ -206,7 +202,7 @@ namespace dsk
 		
 					for (uint8_t i = 0; i < hclen; ++i)
 					{
-						DSKFMT_CALL(_stream->bitRead, codeLengths8bit + i, 3);
+						DSKFMT_STREAM_CALL(bitRead, codeLengths8bit + i, 3);
 					}
 					std::fill_n(codeLengths8bit + hclen, 19 - hclen, 0);
 
@@ -225,7 +221,7 @@ namespace dsk
 					uint64_t bytesRead;
 					uint8_t bitsRead;
 					uint8_t nextByte;
-					DSKFMT_CALL(_stream->bitRead, &nextByte, 8, 0);
+					DSKFMT_STREAM_CALL(bitRead, &nextByte, 8, 0);
 
 					uint8_t symbol;
 
@@ -233,10 +229,10 @@ namespace dsk
 					while (i != codeLengthCount)
 					{
 						success = codeLengthsDecoder.readSymbol(symbol, &nextByte, bytesRead, bitsRead);
-						DSKFMT_CHECK(success, "Error while reading code length symbol.");
+						DSK_CHECK(success, "Error while reading code length symbol.");
 
 						nextByte >>= bitsRead;
-						DSKFMT_CALL(_stream->bitRead, &nextByte, bitsRead, 8 - bitsRead);
+						DSKFMT_STREAM_CALL(bitRead, &nextByte, bitsRead, 8 - bitsRead);
 
 						if (symbol < 16)
 						{
@@ -247,7 +243,7 @@ namespace dsk
 						{
 							if (symbol == 16)
 							{
-								DSKFMT_CHECK(i != 0, "The first symbol cannot be a repeat symbol.");
+								DSK_CHECK(i != 0, "The first symbol cannot be a repeat symbol.");
 
 								bitsRead = 2;
 								const uint8_t repeat = (nextByte & 3) + 3;
@@ -270,13 +266,13 @@ namespace dsk
 							}
 
 							nextByte >>= bitsRead;
-							DSKFMT_CALL(_stream->bitRead, &nextByte, bitsRead, 8 - bitsRead);
+							DSKFMT_STREAM_CALL(bitRead, &nextByte, bitsRead, 8 - bitsRead);
 						}
 		
-						DSKFMT_CHECK(i <= codeLengthCount, "Too many code lengths given for dynamic huffman tree.");
+						DSK_CHECK(i <= codeLengthCount, "Too many code lengths given for dynamic huffman tree.");
 					}
 
-					DSKFMT_CALL(_stream->bitUnread, 8);
+					DSKFMT_STREAM_CALL(bitUnread, 8);
 		
 					std::copy_n(codeLengths8bit, hlit, header.litlenCodeLengths);
 					std::fill_n(header.litlenCodeLengths + hlit, 288 - hlit, 0);
@@ -325,11 +321,9 @@ namespace dsk
 					_distDecoder = new HuffmanDecoder<uint8_t, std::endian::little>(symbols, codeLengths, symbolCount);
 				}
 			}
-		
-			return _stream->getStatus();
 		}
 		
-		const ruc::Status& DeflateIStream::readBlockData(uint8_t* data, uint64_t size, uint64_t& sizeRead)
+		void DeflateIStream::readBlockData(uint8_t* data, uint64_t size, uint64_t& sizeRead)
 		{
 			DSKFMT_BEGIN();
 		
@@ -344,7 +338,7 @@ namespace dsk
 				uint64_t bytesRead;
 				uint8_t bitsRead;
 				uint8_t buffer[2];
-				DSKFMT_CALL(_stream->bitRead, buffer, 16, 0);
+				DSKFMT_STREAM_CALL(bitRead, buffer, 16, 0);
 
 				uint16_t litlenSymbol;
 				uint8_t distSymbol;
@@ -375,11 +369,11 @@ namespace dsk
 						// Read a literal/length symbol
 
 						success = _litlenDecoder->readSymbol(litlenSymbol, buffer, bytesRead, bitsRead);
-						DSKFMT_CHECK(success, "Error while reading literal/length symbol.");
+						DSK_CHECK(success, "Error while reading literal/length symbol.");
 
 						buffer[0] = (bytesRead ? 0 : (buffer[1] << (8 - bitsRead))) | (buffer[bytesRead] >> bitsRead);
 						buffer[1] >>= bitsRead;
-						DSKFMT_CALL(_stream->bitRead, buffer + (bytesRead == 0 || bitsRead == 0), (bytesRead << 3) + bitsRead, (8 - bitsRead) & 7);
+						DSKFMT_STREAM_CALL(bitRead, buffer + (bytesRead == 0 || bitsRead == 0), (bytesRead << 3) + bitsRead, (8 - bitsRead) & 7);
 
 						// Raw byte
 
@@ -406,7 +400,7 @@ namespace dsk
 
 						else
 						{
-							DSKFMT_CHECK(litlenSymbol < 286, "Codes 286-287 are reserved.");
+							DSK_CHECK(litlenSymbol < 286, "Codes 286-287 are reserved.");
 
 							// Read repeating length
 
@@ -423,7 +417,7 @@ namespace dsk
 								_remainingRepeats += buffer[0] & filterLenExtraBits[litlenSymbol];
 								buffer[0] = (bytesRead ? 0 : (buffer[1] << (8 - bitsRead))) | (buffer[bytesRead] >> bitsRead);
 								buffer[1] >>= bitsRead;
-								DSKFMT_CALL(_stream->bitRead, buffer + 1, bitsRead, 8 - bitsRead);
+								DSKFMT_STREAM_CALL(bitRead, buffer + 1, bitsRead, 8 - bitsRead);
 							}
 
 							// Read repeating distance
@@ -433,12 +427,12 @@ namespace dsk
 							static constexpr uint16_t distStart[] = { 1, 2, 3, 4, 5, 7, 9, 13, 17, 25, 33, 49, 65, 97, 129, 193, 257, 385, 513, 769, 1025, 1537, 2049, 3073, 4097, 6145, 8193, 12289, 16385, 24577 };
 
 							success = _distDecoder->readSymbol(distSymbol, buffer, bytesRead, bitsRead);
-							DSKFMT_CHECK(success, "Error while reading distance symbol.");
-							DSKFMT_CHECK(distSymbol < 30, "Distance codes 30-31 are reserved.");
+							DSK_CHECK(success, "Error while reading distance symbol.");
+							DSK_CHECK(distSymbol < 30, "Distance codes 30-31 are reserved.");
 
 							buffer[0] = (bytesRead ? 0 : (buffer[1] << (8 - bitsRead))) | (buffer[bytesRead] >> bitsRead);
 							buffer[1] >>= bitsRead;
-							DSKFMT_CALL(_stream->bitRead, buffer + 1 - bytesRead, (bytesRead << 3) + bitsRead, (8 - bitsRead) & 7);
+							DSKFMT_STREAM_CALL(bitRead, buffer + 1 - bytesRead, (bytesRead << 3) + bitsRead, (8 - bitsRead) & 7);
 
 							_repeaterDistance = distStart[distSymbol];
 
@@ -448,22 +442,22 @@ namespace dsk
 							{
 								_repeaterDistance += buffer[0] | ((buffer[1] & filterDistExtraBits[distSymbol]) << 8);
 								buffer[0] = buffer[1] >> bitsRead;
-								DSKFMT_CALL(_stream->bitRead, buffer + (bitsRead == 0), 8 + bitsRead, (8 - bitsRead) & 7);
+								DSKFMT_STREAM_CALL(bitRead, buffer + (bitsRead == 0), 8 + bitsRead, (8 - bitsRead) & 7);
 							}
 							else if (bitsRead)
 							{
 								_repeaterDistance += buffer[0] & filterDistExtraBits[distSymbol];
 								buffer[0] = (buffer[1] << (8 - bitsRead)) | (buffer[0] >> bitsRead);
 								buffer[1] >>= bitsRead;
-								DSKFMT_CALL(_stream->bitRead, buffer + 1, bitsRead, 8 - bitsRead);
+								DSKFMT_STREAM_CALL(bitRead, buffer + 1, bitsRead, 8 - bitsRead);
 							}
 
-							DSKFMT_CHECK(_repeaterDistance <= _bytesRead, "Distance code goes further than beginning of deflate stream window.");
+							DSK_CHECK(_repeaterDistance <= _bytesRead, "Distance code goes further than beginning of deflate stream window.");
 						}
 					}
 				}
 
-				DSKFMT_CALL(_stream->bitUnread, 16);
+				DSKFMT_STREAM_CALL(bitUnread, 16);
 			}
 
 			// Uncompressed data
@@ -471,7 +465,7 @@ namespace dsk
 			else
 			{
 				sizeRead = std::min<uint64_t>(_currentBlockRemainingSize, size);
-				DSKFMT_CALL(_stream->read, data, sizeRead);
+				DSKFMT_STREAM_CALL(read, data, sizeRead);
 				_currentBlockRemainingSize -= sizeRead;
 				_bytesRead += sizeRead;
 
@@ -496,11 +490,9 @@ namespace dsk
 					_windowIndex = 0;
 				}
 			}
-
-			return _stream->getStatus();
 		}
 		
-		const ruc::Status& DeflateIStream::readBlockEnd()
+		void DeflateIStream::readBlockEnd()
 		{
 			DSKFMT_BEGIN();
 
@@ -515,12 +507,12 @@ namespace dsk
 					uint64_t bytesRead;
 					uint8_t bitsRead;
 					uint8_t buffer[2];
-					DSKFMT_CALL(_stream->bitRead, buffer, 16, 0);
+					DSKFMT_STREAM_CALL(bitRead, buffer, 16, 0);
 
 					uint16_t symbol;
 					_litlenDecoder->readSymbol(symbol, buffer, bytesRead, bitsRead);
 
-					DSKFMT_CALL(_stream->bitUnread, 16 - (bytesRead << 3) - bitsRead);
+					DSKFMT_STREAM_CALL(bitUnread, 16 - (bytesRead << 3) - bitsRead);
 				}
 
 				delete _litlenDecoder;
@@ -546,8 +538,6 @@ namespace dsk
 				_bytesRead = 0;
 				_windowIndex = 0;
 			}
-
-			return _stream->getStatus();
 		}
 
 		DeflateIStream::~DeflateIStream()
@@ -611,7 +601,7 @@ namespace dsk
 			}
 		}
 		
-		const ruc::Status& DeflateOStream::writeFile(const deflate::File& file)
+		void DeflateOStream::writeFile(const deflate::File& file)
 		{
 			DSKFMT_BEGIN();
 		
@@ -629,26 +619,22 @@ namespace dsk
 		
 			for (const deflate::Block& block : file.blocks)
 			{
-				DSKFMT_CALL(writeBlock, block);
+				DSK_CALL(writeBlock, block);
 			}
-		
-			return _stream->getStatus();
 		}
 		
-		const ruc::Status& DeflateOStream::writeBlock(const deflate::Block& block)
+		void DeflateOStream::writeBlock(const deflate::Block& block)
 		{
 			DSKFMT_BEGIN();
 		
 			assert(!_writingBlock);
 		
-			DSKFMT_CALL(writeBlockHeader, block.header, block.data.size());
-			DSKFMT_CALL(writeBlockData, block.data.data(), block.data.size());
-			DSKFMT_CALL(writeBlockEnd);
-		
-			return _stream->getStatus();
+			DSK_CALL(writeBlockHeader, block.header, block.data.size());
+			DSK_CALL(writeBlockData, block.data.data(), block.data.size());
+			DSK_CALL(writeBlockEnd);
 		}
 		
-		const ruc::Status& DeflateOStream::writeBlockHeader(const deflate::BlockHeader& header, uint16_t size)
+		void DeflateOStream::writeBlockHeader(const deflate::BlockHeader& header, uint16_t size)
 		{
 			DSKFMT_BEGIN();
 		
@@ -659,8 +645,8 @@ namespace dsk
 			_writingBlock = true;
 			_writingLastBlock = header.isFinal;
 		
-			DSKFMT_CALL(_stream->bitWrite, header.isFinal);
-			DSKFMT_CALL(_stream->bitWrite, reinterpret_cast<const uint8_t*>(&header.compressionType), 2);
+			DSKFMT_STREAM_CALL(bitWrite, header.isFinal);
+			DSKFMT_STREAM_CALL(bitWrite, reinterpret_cast<const uint8_t*>(&header.compressionType), 2);
 		
 			// Write the rest of the header depending on the compression type
 
@@ -675,9 +661,9 @@ namespace dsk
 					_currentBlockCompressed = false;
 					_currentBlockRemainingSize = size;
 		
-					DSKFMT_CALL(_stream->finishByte);
-					DSKFMT_CALL(_stream->write, size);
-					DSKFMT_CALL(_stream->write, static_cast<uint16_t>(~size));
+					DSKFMT_STREAM_CALL(finishByte);
+					DSKFMT_STREAM_CALL(write, size);
+					DSKFMT_STREAM_CALL(write, static_cast<uint16_t>(~size));
 
 					break;
 				}
@@ -727,14 +713,14 @@ namespace dsk
 					for (; header.litlenCodeLengths[hlit - 1] == 0; --hlit);
 		
 					buffer = hlit - 257;
-					DSKFMT_CALL(_stream->bitWrite, &buffer, 5);
+					DSKFMT_STREAM_CALL(bitWrite, &buffer, 5);
 		
 					// Compute and write HDIST
 		
 					for (; header.distCodeLengths[hdist - 1] == 0 && hdist; --hdist);
 		
 					buffer = hdist - 1;
-					DSKFMT_CALL(_stream->bitWrite, &buffer, 5);
+					DSKFMT_STREAM_CALL(bitWrite, &buffer, 5);
 		
 					// Compute and write HCLEN
 		
@@ -743,7 +729,7 @@ namespace dsk
 					uint8_t hclen = 19;
 		
 					buffer = hclen - 4;
-					DSKFMT_CALL(_stream->bitWrite, &buffer, 4);
+					DSKFMT_STREAM_CALL(bitWrite, &buffer, 4);
 		
 					// Write code lengths for the code length alphabet and create the associated huffman encoder
 
@@ -753,7 +739,7 @@ namespace dsk
 
 					for (uint8_t i = 0; i < hclen; ++i)
 					{
-						DSKFMT_CALL(_stream->bitWrite, codeLengths8bit + i, 3);
+						DSKFMT_STREAM_CALL(bitWrite, codeLengths8bit + i, 3);
 					}
 		
 					uint16_t symbolCount = hclen;
@@ -791,7 +777,7 @@ namespace dsk
 
 					// Write all code lengths to the stream
 
-					DSKFMT_CALL(_stream->bitWrite, codeLengths8bit, (byteCount << 3) + bitCount);
+					DSKFMT_STREAM_CALL(bitWrite, codeLengths8bit, (byteCount << 3) + bitCount);
 		
 					// Fill codeLengths8bit to create encoder later
 
@@ -836,11 +822,9 @@ namespace dsk
 					_distEncoder = new HuffmanEncoder<uint8_t, std::endian::little>(symbols, codeLengths, symbolCount);
 				}
 			}
-		
-			return _stream->getStatus();
 		}
 		
-		const ruc::Status& DeflateOStream::writeBlockData(const uint8_t* data, uint64_t size)
+		void DeflateOStream::writeBlockData(const uint8_t* data, uint64_t size)
 		{
 			DSKFMT_BEGIN();
 		
@@ -870,14 +854,14 @@ namespace dsk
 						_windowIndex = (_windowIndex + 1) & _windowIndexFilter;
 					}
 
-					DSKFMT_CALL(_stream->bitWrite, buffer, (byteCount << 3) + bitCount);
+					DSKFMT_STREAM_CALL(bitWrite, buffer, (byteCount << 3) + bitCount);
 				}
 			}
 			else
 			{
 				assert(_currentBlockRemainingSize >= size);
 		
-				DSKFMT_CALL(_stream->write, data, size);
+				DSKFMT_STREAM_CALL(write, data, size);
 				_currentBlockRemainingSize -= size;
 
 				if (size < _windowSize)
@@ -901,11 +885,9 @@ namespace dsk
 					_windowIndex = 0;
 				}
 			}
-			
-			return _stream->getStatus();
 		}
 		
-		const ruc::Status& DeflateOStream::writeBlockEnd()
+		void DeflateOStream::writeBlockEnd()
 		{
 			DSKFMT_BEGIN();
 		
@@ -917,7 +899,7 @@ namespace dsk
 				uint64_t bytesWritten;
 				uint8_t bitsWritten;
 				_litlenEncoder->writeSymbol(256, buffer, bytesWritten, bitsWritten);
-				DSKFMT_CALL(_stream->bitWrite, buffer, (bytesWritten << 3) + bitsWritten);
+				DSKFMT_STREAM_CALL(bitWrite, buffer, (bytesWritten << 3) + bitsWritten);
 
 				delete _litlenEncoder;
 				_litlenEncoder = nullptr;
@@ -940,10 +922,8 @@ namespace dsk
 				_bytesWritten = 0;
 				_windowIndex = 0;
 
-				DSKFMT_CALL(_stream->finishByte);
+				DSKFMT_STREAM_CALL(finishByte);
 			}
-		
-			return _stream->getStatus();
 		}
 		
 		DeflateOStream::~DeflateOStream()

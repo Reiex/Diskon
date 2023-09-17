@@ -21,63 +21,55 @@ namespace dsk
 			}
 		}
 
-		const ruc::Status& RiffIStream::readFile(riff::File& file)
+		void RiffIStream::readFile(riff::File& file)
 		{
 			assert(_remainingSizes.empty());
-
-			return _readChunk(file);
+			_readChunk(file);
 		}
 
-		const ruc::Status& RiffIStream::readFileHeader(riff::FileHeader& header)
+		void RiffIStream::readFileHeader(riff::FileHeader& header)
 		{
 			assert(_remainingSizes.empty());
-
-			return _readChunkHeader(header);
+			_readChunkHeader(header);
 		}
 
-		const ruc::Status& RiffIStream::readChunk(riff::Chunk& chunk)
+		void RiffIStream::readChunk(riff::Chunk& chunk)
 		{
 			assert(!_remainingSizes.empty());
-
-			return _readChunk(chunk);
+			_readChunk(chunk);
 		}
 
-		const ruc::Status& RiffIStream::readChunkHeader(riff::ChunkHeader& header)
+		void RiffIStream::readChunkHeader(riff::ChunkHeader& header)
 		{
 			assert(!_remainingSizes.empty());
-
-			return _readChunkHeader(header);
+			_readChunkHeader(header);
 		}
 
-		const ruc::Status& RiffIStream::skipChunkData(uint32_t size)
+		void RiffIStream::skipChunkData(uint32_t size)
 		{
 			DSKFMT_BEGIN();
 
 			assert(_readingData);
 			assert(size <= _remainingSizes.back()[1]);
 
-			DSKFMT_CALL(_stream->skip, size);
+			DSKFMT_STREAM_CALL(skip, size);
 			_remainingSizes.back()[1] -= size;
 
 			if (_remainingSizes.back()[1] == 0)
 			{
-				DSKFMT_CALL(_readChunkEnd);
+				DSK_CALL(_readChunkEnd);
 			}
-
-			return _stream->getStatus();
 		}
 
-		const ruc::Status& RiffIStream::finishCurrentChunk()
+		void RiffIStream::finishCurrentChunk()
 		{
 			DSKFMT_BEGIN();
 
 			assert(_readingData);
 
-			DSKFMT_CALL(_stream->skip, _remainingSizes.back()[1]);
+			DSKFMT_STREAM_CALL(skip, _remainingSizes.back()[1]);
 			_remainingSizes.back()[1] = 0;
-			DSKFMT_CALL(_readChunkEnd);
-
-			return _stream->getStatus();
+			DSK_CALL(_readChunkEnd);
 		}
 
 		uint32_t RiffIStream::computeRemainingSize() const
@@ -108,14 +100,14 @@ namespace dsk
 			_readingData = false;
 		}
 
-		const ruc::Status& RiffIStream::_readChunk(riff::Chunk& chunk)
+		void RiffIStream::_readChunk(riff::Chunk& chunk)
 		{
 			DSKFMT_BEGIN();
 
 			const uint32_t depth = _remainingSizes.size();
 
 			riff::ChunkHeader header;
-			DSKFMT_CALL(_readChunkHeader, header);
+			DSK_CALL(_readChunkHeader, header);
 
 			chunk.type = header.type;
 			std::copy_n(header.id, 4, chunk.id);
@@ -129,7 +121,7 @@ namespace dsk
 					case riff::ChunkType::StandardChunk:
 					{
 						chunk.data.resize(header.size);
-						DSKFMT_CALL(readChunkData, chunk.data.data(), header.size);
+						DSK_CALL(readChunkData, chunk.data.data(), header.size);
 
 						break;
 					}
@@ -139,18 +131,16 @@ namespace dsk
 						while (_remainingSizes.size() > depth)
 						{
 							chunk.subChunks.emplace_back();
-							DSKFMT_CALL(_readChunk, chunk.subChunks.back());
+							DSK_CALL(_readChunk, chunk.subChunks.back());
 						}
 
 						break;
 					}
 				}
 			}
-
-			return _stream->getStatus();
 		}
 
-		const ruc::Status& RiffIStream::_readChunkHeader(riff::ChunkHeader& header)
+		void RiffIStream::_readChunkHeader(riff::ChunkHeader& header)
 		{
 			DSKFMT_BEGIN();
 
@@ -158,8 +148,8 @@ namespace dsk
 
 			// Read the real chunk header (id and size)
 
-			DSKFMT_CALL(_stream->read, header.id, 4);
-			DSKFMT_CALL(_stream->read, header.size);
+			DSKFMT_STREAM_CALL(read, header.id, 4);
+			DSKFMT_STREAM_CALL(read, header.size);
 
 			// Check chunk type, read additional information if special chunk type.
 
@@ -169,11 +159,11 @@ namespace dsk
 			{
 				case fourcc("RIFF"):
 				{
-					DSKFMT_CHECK(_remainingSizes.empty(), "Found 'RIFF' chunk not at root of file.");
-					DSKFMT_CHECK(header.size >= 4, std::format("Expected 'RIFF' chunk size to be more than or equal to 4. Instead, got size of {}.", header.size));
+					DSK_CHECK(_remainingSizes.empty(), "Found 'RIFF' chunk not at root of file.");
+					DSK_CHECK(header.size >= 4, std::format("Expected 'RIFF' chunk size to be more than or equal to 4. Instead, got size of {}.", header.size));
 
 					header.type = riff::ChunkType::RiffChunk;
-					DSKFMT_CALL(_stream->read, header.id, 4);
+					DSKFMT_STREAM_CALL(read, header.id, 4);
 
 					headerSize = 12;
 					chunkEmpty = (header.size == 4);
@@ -182,11 +172,11 @@ namespace dsk
 				}
 				case fourcc("LIST"):
 				{
-					DSKFMT_CHECK(!_remainingSizes.empty(), "Found 'LIST' chunk at root of file.");
-					DSKFMT_CHECK(header.size >= 4, std::format("Expected 'LIST' chunk size to be more than or equal to 4. Instead, got size of {}.", header.size));
+					DSK_CHECK(!_remainingSizes.empty(), "Found 'LIST' chunk at root of file.");
+					DSK_CHECK(header.size >= 4, std::format("Expected 'LIST' chunk size to be more than or equal to 4. Instead, got size of {}.", header.size));
 
 					header.type = riff::ChunkType::ListChunk;
-					DSKFMT_CALL(_stream->read, header.id, 4);
+					DSKFMT_STREAM_CALL(read, header.id, 4);
 
 					headerSize = 12;
 					chunkEmpty = (header.size == 4);
@@ -195,7 +185,7 @@ namespace dsk
 				}
 				default:
 				{
-					DSKFMT_CHECK(!_remainingSizes.empty(), std::format("Found '{}' chunk at root of file.", std::string_view(header.id, 4)));
+					DSK_CHECK(!_remainingSizes.empty(), std::format("Found '{}' chunk at root of file.", std::string_view(header.id, 4)));
 					header.type = riff::ChunkType::StandardChunk;
 
 					headerSize = 8;
@@ -210,7 +200,7 @@ namespace dsk
 
 			if (!chunkEmpty)
 			{
-				DSKFMT_CHECK(_remainingSizes.empty() || _remainingSizes.back()[1] >= header.size + 8 + (header.size & 1), "Invalid chunk size found.");
+				DSK_CHECK(_remainingSizes.empty() || _remainingSizes.back()[1] >= header.size + 8 + (header.size & 1), "Invalid chunk size found.");
 				_remainingSizes.push_back({ header.size + 8, header.size + 8 - headerSize });
 			}
 
@@ -218,19 +208,17 @@ namespace dsk
 
 			else if (!_remainingSizes.empty())
 			{
-				DSKFMT_CHECK(_remainingSizes.back()[1] >= headerSize, "Invalid chunk size found.");
+				DSK_CHECK(_remainingSizes.back()[1] >= headerSize, "Invalid chunk size found.");
 				_remainingSizes.back()[1] -= headerSize;
 
 				if (_remainingSizes.back()[1] == 0)
 				{
-					DSKFMT_CALL(_readChunkEnd);
+					DSK_CALL(_readChunkEnd);
 				}
 			}
-
-			return _stream->getStatus();
 		}
 
-		const ruc::Status& RiffIStream::_readChunkEnd()
+		void RiffIStream::_readChunkEnd()
 		{
 			DSKFMT_BEGIN();
 
@@ -243,8 +231,8 @@ namespace dsk
 				if (_remainingSizes.back()[0] & 1)
 				{
 					uint8_t padByte;
-					DSKFMT_CALL(_stream->read, padByte);
-					DSKFMT_CHECK(padByte == 0, std::format("Pad byte expected to be 0. Instead, got '{}'.", padByte));
+					DSKFMT_STREAM_CALL(read, padByte);
+					DSK_CHECK(padByte == 0, std::format("Pad byte expected to be 0. Instead, got '{}'.", padByte));
 					++_remainingSizes.back()[0];
 				}
 
@@ -255,8 +243,6 @@ namespace dsk
 
 				_remainingSizes.pop_back();
 			}
-
-			return _stream->getStatus();
 		}
 
 
@@ -270,32 +256,28 @@ namespace dsk
 			}
 		}
 
-		const ruc::Status& RiffOStream::writeFile(const riff::File& file)
+		void RiffOStream::writeFile(const riff::File& file)
 		{
 			assert(_remainingSizes.empty());
-
-			return _writeChunk(file);
+			_writeChunk(file);
 		}
 
-		const ruc::Status& RiffOStream::writeFileHeader(const riff::FileHeader& header)
+		void RiffOStream::writeFileHeader(const riff::FileHeader& header)
 		{
 			assert(_remainingSizes.empty());
-
-			return _writeChunkHeader(header);
+			_writeChunkHeader(header);
 		}
 
-		const ruc::Status& RiffOStream::writeChunk(const riff::Chunk& chunk)
+		void RiffOStream::writeChunk(const riff::Chunk& chunk)
 		{
 			assert(!_remainingSizes.empty());
-
-			return _writeChunk(chunk);
+			_writeChunk(chunk);
 		}
 
-		const ruc::Status& RiffOStream::writeChunkHeader(const riff::ChunkHeader& header)
+		void RiffOStream::writeChunkHeader(const riff::ChunkHeader& header)
 		{
 			assert(!_remainingSizes.empty());
-
-			return _writeChunkHeader(header);
+			_writeChunkHeader(header);
 		}
 
 		uint32_t RiffOStream::computeRemainingSize() const
@@ -326,7 +308,7 @@ namespace dsk
 			_writingData = false;
 		}
 
-		const ruc::Status& RiffOStream::_writeChunk(const riff::Chunk& chunk)
+		void RiffOStream::_writeChunk(const riff::Chunk& chunk)
 		{
 			DSKFMT_BEGIN();
 
@@ -335,13 +317,13 @@ namespace dsk
 			std::copy_n(chunk.id, 4, header.id);
 			header.size = chunk.computeInnerSize();
 
-			DSKFMT_CALL(_writeChunkHeader, header);
+			DSK_CALL(_writeChunkHeader, header);
 
 			switch (chunk.type)
 			{
 				case riff::ChunkType::StandardChunk:
 				{
-					DSKFMT_CALL(writeChunkData, chunk.data.data(), chunk.data.size());
+					DSK_CALL(writeChunkData, chunk.data.data(), chunk.data.size());
 
 					break;
 				}
@@ -350,17 +332,15 @@ namespace dsk
 				{
 					for (const riff::Chunk& subChunk : chunk.subChunks)
 					{
-						DSKFMT_CALL(_writeChunk, subChunk);
+						DSK_CALL(_writeChunk, subChunk);
 					}
 
 					break;
 				}
 			}
-
-			return _stream->getStatus();
 		}
 
-		const ruc::Status& RiffOStream::_writeChunkHeader(const riff::ChunkHeader& header)
+		void RiffOStream::_writeChunkHeader(const riff::ChunkHeader& header)
 		{
 			DSKFMT_BEGIN();
 
@@ -374,8 +354,8 @@ namespace dsk
 				{
 					assert(!_remainingSizes.empty());
 
-					DSKFMT_CALL(_stream->write, header.id, 4);
-					DSKFMT_CALL(_stream->write, header.size);
+					DSKFMT_STREAM_CALL(write, header.id, 4);
+					DSKFMT_STREAM_CALL(write, header.size);
 
 					headerSize = 8;
 					chunkEmpty = (header.size == 0);
@@ -388,9 +368,9 @@ namespace dsk
 					assert(_remainingSizes.empty());
 					assert(header.size >= 4);
 
-					DSKFMT_CALL(_stream->write, "RIFF", 4);
-					DSKFMT_CALL(_stream->write, header.size);
-					DSKFMT_CALL(_stream->write, header.id, 4);
+					DSKFMT_STREAM_CALL(write, "RIFF", 4);
+					DSKFMT_STREAM_CALL(write, header.size);
+					DSKFMT_STREAM_CALL(write, header.id, 4);
 
 					headerSize = 12;
 					chunkEmpty = (header.size == 4);
@@ -402,9 +382,9 @@ namespace dsk
 					assert(!_remainingSizes.empty());
 					assert(header.size >= 4);
 
-					DSKFMT_CALL(_stream->write, "LIST", 4);
-					DSKFMT_CALL(_stream->write, header.size);
-					DSKFMT_CALL(_stream->write, header.id, 4);
+					DSKFMT_STREAM_CALL(write, "LIST", 4);
+					DSKFMT_STREAM_CALL(write, header.size);
+					DSKFMT_STREAM_CALL(write, header.id, 4);
 
 					headerSize = 12;
 					chunkEmpty = (header.size == 4);
@@ -430,14 +410,12 @@ namespace dsk
 				_remainingSizes.back()[1] -= headerSize;
 				if (_remainingSizes.back()[1] == 0)
 				{
-					DSKFMT_CALL(_writeChunkEnd);
+					DSK_CALL(_writeChunkEnd);
 				}
 			}
-
-			return _stream->getStatus();
 		}
 
-		const ruc::Status& RiffOStream::_writeChunkEnd()
+		void RiffOStream::_writeChunkEnd()
 		{
 			DSKFMT_BEGIN();
 
@@ -450,7 +428,7 @@ namespace dsk
 				if (_remainingSizes.back()[0] & 1)
 				{
 					constexpr uint8_t padByte = 0;
-					DSKFMT_CALL(_stream->write, padByte);
+					DSKFMT_STREAM_CALL(write, padByte);
 					++_remainingSizes.back()[0];
 				}
 
@@ -461,8 +439,6 @@ namespace dsk
 
 				_remainingSizes.pop_back();
 			}
-
-			return _stream->getStatus();
 		}
 	}
 }

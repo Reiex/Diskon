@@ -107,11 +107,11 @@ namespace dsk
 				XmlIStream& operator=(const XmlIStream& stream) = delete;
 				XmlIStream& operator=(XmlIStream&& stream) = delete;
 
-				const ruc::Status& readFile(xml::File& file);
-				const ruc::Status& readProlog(xml::Prolog& prolog);
-				const ruc::Status& readElementTag(xml::ElementTag& tag);
-				const ruc::Status& readElementContent(xml::ElementContent& content, xml::ContentType::Flags filter = xml::ContentType::Default);
-				const ruc::Status& readEnding(xml::Ending& ending);
+				void readFile(xml::File& file);
+				void readProlog(xml::Prolog& prolog);
+				void readElementTag(xml::ElementTag& tag);
+				void readElementContent(xml::ElementContent& content, xml::ContentType::Flags filter = xml::ContentType::Default);
+				void readEnding(xml::Ending& ending);
 
 				~XmlIStream() = default;
 
@@ -119,19 +119,19 @@ namespace dsk
 
 				void resetFormatState() override final;
 
-				const ruc::Status& _readPIsSpacesAndComments(std::vector<xml::ProcessingInstruction>& instructions);
-				const ruc::Status& _readElement(xml::Element& element);
+				void _readPIsSpacesAndComments(std::vector<xml::ProcessingInstruction>& instructions);
+				void _readElement(xml::Element& element);
 
-				const ruc::Status& _readDeclaration(std::optional<xml::Declaration>& declaration);
-				const ruc::Status& _readDoctype(std::optional<xml::Doctype>& doctype);
-				const ruc::Status& _readProcessingInstruction(xml::ProcessingInstruction& instruction, bool& parsedSomething);
+				void _readDeclaration(std::optional<xml::Declaration>& declaration);
+				void _readDoctype(std::optional<xml::Doctype>& doctype);
+				void _readProcessingInstruction(xml::ProcessingInstruction& instruction, bool& parsedSomething);
 
-				const ruc::Status& _readEq();
-				const ruc::Status& _readEncName(std::string& name);
-				const ruc::Status& _readName(std::string& name);
-				const ruc::Status& _readAttValue(std::string& value);
+				void _readEq();
+				void _readEncName(std::string& name);
+				void _readName(std::string& name);
+				void _readAttValue(std::string& value);
 
-				const ruc::Status& _readComment(bool& parsedSomething);
+				void _readComment(bool& parsedSomething);
 
 				std::vector<std::string> _tags;
 				bool _prologRead;
@@ -149,11 +149,11 @@ namespace dsk
 				XmlOStream& operator=(const XmlOStream& stream) = delete;
 				XmlOStream& operator=(XmlOStream&& stream) = delete;
 
-				const ruc::Status& writeFile(const xml::File& file);
-				const ruc::Status& writeProlog(const xml::Prolog& prolog);
-				const ruc::Status& writeElementTag(const xml::ElementTag& tag);
-				const ruc::Status& writeElementContent(const xml::ElementContent& content);
-				const ruc::Status& writeEnding(const xml::Ending& ending);
+				void writeFile(const xml::File& file);
+				void writeProlog(const xml::Prolog& prolog);
+				void writeElementTag(const xml::ElementTag& tag);
+				void writeElementContent(const xml::ElementContent& content);
+				void writeEnding(const xml::Ending& ending);
 
 				~XmlOStream() = default;
 
@@ -161,12 +161,12 @@ namespace dsk
 
 				void resetFormatState() override final;
 
-				const ruc::Status& _writeDeclaration(const xml::Declaration& declaration);
-				const ruc::Status& _writeDoctype(const xml::Doctype& doctype);
-				const ruc::Status& _writeProcessingInstruction(const xml::ProcessingInstruction& instruction);
-				const ruc::Status& _writeElement(const xml::Element& element);
+				void _writeDeclaration(const xml::Declaration& declaration);
+				void _writeDoctype(const xml::Doctype& doctype);
+				void _writeProcessingInstruction(const xml::ProcessingInstruction& instruction);
+				void _writeElement(const xml::Element& element);
 
-				const ruc::Status& _writeAttribute(const std::pair<const std::string, std::string>& attribute);
+				void _writeAttribute(const std::pair<const std::string, std::string>& attribute);
 
 				std::vector<std::string> _tags;
 				bool _prologWritten;

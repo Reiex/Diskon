@@ -58,11 +58,11 @@ namespace dsk
 				WaveIStream& operator=(WaveIStream&& stream) = delete;
 		
 		
-				template<typename TSample> const ruc::Status& readFile(wave::File<TSample>& file);
-				const ruc::Status& readHeader(wave::Header& header);
-				template<typename TSample> const ruc::Status& readSampleBlocks(TSample* samples, uint32_t blockCount);
-				const ruc::Status& skipBlocks(uint32_t blockCount);
-				const ruc::Status& readEndFile();
+				template<typename TSample> void readFile(wave::File<TSample>& file);
+				void readHeader(wave::Header& header);
+				template<typename TSample> void readSampleBlocks(TSample* samples, uint32_t blockCount);
+				void skipBlocks(uint32_t blockCount);
+				void readEndFile();
 		
 				~WaveIStream();
 		
@@ -71,13 +71,13 @@ namespace dsk
 				void setStreamState() override final;
 				void resetFormatState() override final;
 		
-				const ruc::Status& _readFormatChunk(const riff::ChunkHeader& chunkHeader);
+				void _readFormatChunk(const riff::ChunkHeader& chunkHeader);
 				// TODO: Split _readFormatChunk into sub functions for each format
 		
-				const ruc::Status& _readFactChunk(const riff::ChunkHeader& chunkHeader);
+				void _readFactChunk(const riff::ChunkHeader& chunkHeader);
 				// TODO: Read other optionnal chunks
 		
-				template<typename TRaw, typename TSample> const ruc::Status& _readRawSampleBlocks(TSample* samples, uint32_t blockCount);
+				template<typename TRaw, typename TSample> void _readRawSampleBlocks(TSample* samples, uint32_t blockCount);
 		
 				bool _headerRead;
 				wave::Header _header;
@@ -98,9 +98,9 @@ namespace dsk
 				WaveOStream& operator=(WaveOStream&& stream) = delete;
 		
 		
-				template<typename TSample> const ruc::Status& writeFile(const wave::File<TSample>& file);
-				const ruc::Status& writeHeader(const wave::Header& header);
-				template<typename TSample> const ruc::Status& writeSampleBlocks(const TSample* samples, uint32_t blockCount);
+				template<typename TSample> void writeFile(const wave::File<TSample>& file);
+				void writeHeader(const wave::Header& header);
+				template<typename TSample> void writeSampleBlocks(const TSample* samples, uint32_t blockCount);
 		
 				~WaveOStream();
 		
@@ -109,7 +109,7 @@ namespace dsk
 				void setStreamState() override final;
 				void resetFormatState() override final;
 		
-				template<typename TRaw, typename TSample> const ruc::Status& _writeRawSampleBlocks(const TSample* samples, uint32_t blockCount);
+				template<typename TRaw, typename TSample> void _writeRawSampleBlocks(const TSample* samples, uint32_t blockCount);
 		
 				bool _headerWritten;
 				wave::Header _header;
