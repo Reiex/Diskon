@@ -5,12 +5,22 @@
 ##! \date 2022-2023
 #######################################################################################################################
 
+# Global project definitions
+
 cmake_minimum_required(VERSION 3.21)
 
-project(Diskon)
+project(SciPP)
 
 set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
+# Add external dependencies
+
+set(RUC_LIB_ONLY)
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/external/Ruc)
+
+# Diskon
 
 add_library(
     diskon SHARED
@@ -37,25 +47,29 @@ target_compile_definitions(
     PUBLIC DISKON_EXPORTS
 )
 
+# Diskon examples
 
-add_executable(
-    diskon-examples
-    ${CMAKE_CURRENT_LIST_DIR}/examples/main.cpp
-)
+if(NOT DEFINED DISKON_LIB_ONLY)
 
-target_include_directories(
-    diskon-examples
-    PUBLIC ${CMAKE_CURRENT_LIST_DIR}/include
-    PUBLIC ${CMAKE_CURRENT_LIST_DIR}/external/Ruc/include
-)
+    add_executable(
+        diskon-examples
+        ${CMAKE_CURRENT_LIST_DIR}/examples/main.cpp
+    )
 
-target_link_libraries(
-    diskon-examples
-    diskon
-)
+    add_dependencies(
+        diskon-examples
+        diskon
+    )
 
+    target_include_directories(
+        diskon-examples
+        PUBLIC ${CMAKE_CURRENT_LIST_DIR}/include
+        PUBLIC ${CMAKE_CURRENT_LIST_DIR}/external/Ruc/include
+    )
 
-add_dependencies(
-    diskon-examples
-    diskon
-)
+    target_link_libraries(
+        diskon-examples
+        diskon
+    )
+
+endif()
