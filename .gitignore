@@ -1,5 +1,3 @@
-/.vs/
-/build/
-/lib/
-/obj/
-/examples/assets/
+.vs/
+build/
+examples/assets/
