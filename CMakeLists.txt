@@ -9,15 +9,17 @@
 
 cmake_minimum_required(VERSION 3.21)
 
-project(SciPP)
+project(Diskon)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
+option(DISKON_LIBRARY_ONLY "Build only the library")
+
 # Add external dependencies
 
-set(RUC_LIB_ONLY)
+set(RUC_LIBRARY_ONLY ON)
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/external/Ruc)
 
 # Diskon
@@ -49,7 +51,7 @@ target_compile_definitions(
 
 # Diskon examples
 
-if(NOT DEFINED DISKON_LIB_ONLY)
+if(NOT DISKON_LIBRARY_ONLY)
 
     add_executable(
         diskon-examples
