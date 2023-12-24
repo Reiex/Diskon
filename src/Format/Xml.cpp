@@ -112,6 +112,7 @@ namespace dsk
 				}
 				else
 				{
+					DSK_CHECK(!tag.attributes.contains(attName), std::format("Attribute name found twice in element '{}': '{}'.", tag.name, attName));
 					DSK_CALL(_readEq);
 					DSK_CALL(_readAttValue, tag.attributes[attName]);
 					DSKFMT_STREAM_CALL(skipCharWhile, isSpaceChar, skipCount);
