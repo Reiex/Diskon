@@ -46,7 +46,7 @@ namespace dsk
 			struct ElementTag
 			{
 				std::string name;
-				std::vector<std::pair<std::string, std::string>> attributes;
+				std::unordered_map<std::string, std::string> attributes;
 				bool isEmpty;
 			};
 

@@ -101,12 +101,10 @@ namespace dsk
 			DSK_CHECK(!tag.name.empty(), "Could not read tag name.");
 			DSKFMT_STREAM_CALL(skipCharWhile, isSpaceChar, skipCount);
 
-			tag.attributes.emplace_back();
+			std::string attName;
 			while (skipCount)
 			{
-				std::string& attName = tag.attributes.back().first;
-				std::string& attValue = tag.attributes.back().second;
-
+				attName.clear();
 				DSK_CALL(_readName, attName);
 				if (attName.empty())
 				{
@@ -115,14 +113,10 @@ namespace dsk
 				else
 				{
 					DSK_CALL(_readEq);
-					DSK_CALL(_readAttValue, attValue);
+					DSK_CALL(_readAttValue, tag.attributes[attName]);
 					DSKFMT_STREAM_CALL(skipCharWhile, isSpaceChar, skipCount);
-
-					tag.attributes.emplace_back();
 				}
 			}
-
-			tag.attributes.pop_back();
 
 			DSKFMT_STREAM_CALL(read, buffer);
 			if (buffer != '>')

@@ -113,8 +113,6 @@ void huffmanExample()
 
 int main()
 {
-	std::string x = std::filesystem::current_path().string();
-
 	formatExample<dsk::fmt::WaveIStream, dsk::fmt::WaveOStream, dsk::fmt::wave::File<int16_t>>(
 		{
 			"Balavoine8.wav",
