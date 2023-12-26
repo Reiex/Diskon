@@ -30,6 +30,43 @@ endif()
 
 add_library(
     diskon SHARED
+    ${CMAKE_CURRENT_LIST_DIR}/include/Diskon/Diskon.hpp
+    ${CMAKE_CURRENT_LIST_DIR}/include/Diskon/DiskonDecl.hpp
+    ${CMAKE_CURRENT_LIST_DIR}/include/Diskon/DiskonTypes.hpp
+    ${CMAKE_CURRENT_LIST_DIR}/include/Diskon/Core/Core.hpp
+    ${CMAKE_CURRENT_LIST_DIR}/include/Diskon/Core/CoreDecl.hpp
+    ${CMAKE_CURRENT_LIST_DIR}/include/Diskon/Core/CoreTypes.hpp
+    ${CMAKE_CURRENT_LIST_DIR}/include/Diskon/Core/Float.hpp
+    ${CMAKE_CURRENT_LIST_DIR}/include/Diskon/Core/Hash.hpp
+    ${CMAKE_CURRENT_LIST_DIR}/include/Diskon/Core/Huffman.hpp
+    ${CMAKE_CURRENT_LIST_DIR}/include/Diskon/Core/Int.hpp
+    ${CMAKE_CURRENT_LIST_DIR}/include/Diskon/Core/IntSat.hpp
+    ${CMAKE_CURRENT_LIST_DIR}/include/Diskon/Core/LookupMultitable.hpp
+    ${CMAKE_CURRENT_LIST_DIR}/include/Diskon/Core/Misc.hpp
+    ${CMAKE_CURRENT_LIST_DIR}/include/Diskon/Core/Stream.hpp
+    ${CMAKE_CURRENT_LIST_DIR}/include/Diskon/Core/templates/Float.hpp
+    ${CMAKE_CURRENT_LIST_DIR}/include/Diskon/Core/templates/Hash.hpp
+    ${CMAKE_CURRENT_LIST_DIR}/include/Diskon/Core/templates/Huffman.hpp
+    ${CMAKE_CURRENT_LIST_DIR}/include/Diskon/Core/templates/Int.hpp
+    ${CMAKE_CURRENT_LIST_DIR}/include/Diskon/Core/templates/IntSat.hpp
+    ${CMAKE_CURRENT_LIST_DIR}/include/Diskon/Core/templates/LookupMultitable.hpp
+    ${CMAKE_CURRENT_LIST_DIR}/include/Diskon/Core/templates/Misc.hpp
+    ${CMAKE_CURRENT_LIST_DIR}/include/Diskon/Core/templates/Stream.hpp
+    ${CMAKE_CURRENT_LIST_DIR}/include/Diskon/Format/Format.hpp
+    ${CMAKE_CURRENT_LIST_DIR}/include/Diskon/Format/FormatDecl.hpp
+    ${CMAKE_CURRENT_LIST_DIR}/include/Diskon/Format/FormatTypes.hpp
+    ${CMAKE_CURRENT_LIST_DIR}/include/Diskon/Format/Deflate.hpp
+    ${CMAKE_CURRENT_LIST_DIR}/include/Diskon/Format/FormatStream.hpp
+    ${CMAKE_CURRENT_LIST_DIR}/include/Diskon/Format/Obj.hpp
+    ${CMAKE_CURRENT_LIST_DIR}/include/Diskon/Format/Png.hpp
+    ${CMAKE_CURRENT_LIST_DIR}/include/Diskon/Format/Pnm.hpp
+    ${CMAKE_CURRENT_LIST_DIR}/include/Diskon/Format/Riff.hpp
+    ${CMAKE_CURRENT_LIST_DIR}/include/Diskon/Format/Wave.hpp
+    ${CMAKE_CURRENT_LIST_DIR}/include/Diskon/Format/Xml.hpp
+    ${CMAKE_CURRENT_LIST_DIR}/include/Diskon/Format/Zlib.hpp
+    ${CMAKE_CURRENT_LIST_DIR}/include/Diskon/Format/templates/Png.hpp
+    ${CMAKE_CURRENT_LIST_DIR}/include/Diskon/Format/templates/Riff.hpp
+    ${CMAKE_CURRENT_LIST_DIR}/include/Diskon/Format/templates/Wave.hpp
     ${CMAKE_CURRENT_LIST_DIR}/src/Core/Stream.cpp
     ${CMAKE_CURRENT_LIST_DIR}/src/Format/FormatStream.cpp
     ${CMAKE_CURRENT_LIST_DIR}/src/Format/Deflate.cpp
@@ -40,6 +77,11 @@ add_library(
     ${CMAKE_CURRENT_LIST_DIR}/src/Format/Xml.cpp
     ${CMAKE_CURRENT_LIST_DIR}/src/Format/Pnm.cpp
     ${CMAKE_CURRENT_LIST_DIR}/src/Format/Obj.cpp
+)
+
+add_dependencies(
+    diskon
+    ruc
 )
 
 target_include_directories(
