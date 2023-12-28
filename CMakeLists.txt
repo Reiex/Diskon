@@ -17,13 +17,9 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 # Add external dependencies
 
-option(DISKON_ADD_DEPENDENCIES "Add external dependencies to the project" ON)
-
-if(DISKON_ADD_DEPENDENCIES)
-
+if(NOT TARGET ruc)
     set(RUC_ADD_EXAMPLES OFF)
     add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/external/Ruc)
-
 endif()
 
 # Diskon
